@@ -1,0 +1,42 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider  = "postgresql"
+  // url       = env("DATABASE_URL")
+  // directUrl = env("DIRECT_URL")
+}
+
+enum PeranPengguna {
+  KLIEN
+  ADMIN
+  PEMILIK
+}
+
+enum StatusAkun {
+  AKTIF
+  NONAKTIF
+  DIBLOKIR
+}
+
+model pengguna {
+  id              String         @id @default(uuid())
+  email           String         @unique
+  kataSandi       String         
+  namaLengkap     String?
+  nomorTelepon    String?
+  peran           PeranPengguna  @default(KLIEN)
+  statusAkun      StatusAkun     @default(AKTIF)
+  fotoProfil      String?        
+  terakhirLogin   DateTime?
+  dibuatPada      DateTime       @default(now())
+  diperbaruiPada  DateTime       @updatedAt
+  
+  dibuatOlehId    String?        @map("dibuat_oleh_id")
+  dibuatOleh      pengguna?      @relation("AdminDibuatOleh", fields: [dibuatOlehId], references: [id])
+  
+  adminYangDibuat pengguna[]     @relation("AdminDibuatOleh")
+  
+  @@map("pengguna")
+}

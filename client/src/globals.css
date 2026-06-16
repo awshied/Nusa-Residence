@@ -1,0 +1,62 @@
+@import url("https://fonts.googleapis.com/css2?family=Lobster&family=Mona+Sans:ital,wght@0,200..900;1,200..900&family=Poppins:wght@100;400;500;800&display=swap");
+
+@import "tailwindcss";
+@plugin "daisyui";
+@plugin "daisyui/theme" {
+  name: "purplequeen";
+  default: true;
+  prefersdark: false;
+  color-scheme: "light";
+  --color-base-100: #f8f3fd;
+  --color-base-200: #f1e6fd;
+  --color-base-300: #e9d4ff;
+  --color-base-content: #883bc2;
+  --color-primary: #00d3bb;
+  --color-primary-content: #002d2c;
+  --color-secondary: #9e9e9e;
+  --color-secondary-content: #090909;
+  --color-accent: #01df72;
+  --color-accent-content: #022d14;
+  --color-neutral: #59168b;
+  --color-neutral-content: #f8f3fd;
+  --color-info: #00d0ef;
+  --color-info-content: #053344;
+  --color-success: #01df72;
+  --color-success-content: #022d14;
+  --color-warning: #fdc700;
+  --color-warning-content: #411e03;
+  --color-error: #ff6266;
+  --color-error-content: #440607;
+  --radius-selector: 2rem;
+  --radius-field: 2rem;
+  --radius-box: 2rem;
+  --size-selector: 0.25rem;
+  --size-field: 0.25rem;
+  --border: 1px;
+  --depth: 1;
+  --noise: 1;
+}
+
+@theme {
+  --font-poppins: "Poppins", sans-serif;
+  --font-mona: "Mona Sans", sans-serif;
+  --font-lobster: "Lobster", sans-serif;
+}
+
+@layer base {
+  body {
+    @apply bg-base-100 text-base-content;
+  }
+}
+
+::-webkit-scrollbar {
+  width: 8px;
+}
+
+::-webkit-scrollbar-track {
+  @apply bg-base-200;
+}
+
+::-webkit-scrollbar-thumb {
+  @apply bg-primary rounded-full;
+}
