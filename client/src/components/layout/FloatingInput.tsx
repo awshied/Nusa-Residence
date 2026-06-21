@@ -43,7 +43,7 @@ const FloatingInput: React.FC<FloatingInputProps> = ({
       <label
         className={`
           absolute left-0 transition-all text-base-content font-poppins duration-300 font-semibold
-          ${isActive ? "-top-2 text-sm" : "top-1 text-base"}
+          ${isActive ? "-top-1 md:-top-2 text-xs md:text-sm" : "top-0 md:top-1 text-sm md:text-base"}
         `}
       >
         {label}
@@ -79,7 +79,7 @@ const FloatingInput: React.FC<FloatingInputProps> = ({
           onChange={onChange as React.ChangeEventHandler<HTMLInputElement>}
           onFocus={() => setFocused(true)}
           onBlur={() => setFocused(false)}
-          className="w-full bg-transparent font-mona font-medium text-base-content text-base border-b-2 border-base-content pb-2 pt-5 outline-none transition-all duration-300 pr-10"
+          className="w-full bg-transparent font-mona font-medium text-base-content text-sm md:text-base border-b-2 border-base-content pb-2 pt-5 outline-none transition-all duration-300 pr-10"
         />
       )}
 
@@ -87,7 +87,7 @@ const FloatingInput: React.FC<FloatingInputProps> = ({
         <img
           src={icon}
           alt="icon"
-          className="absolute right-1 bottom-3 w-7 h-auto"
+          className="absolute right-1 bottom-3 w-5 md:w-7 h-auto"
         />
       )}
     </div>

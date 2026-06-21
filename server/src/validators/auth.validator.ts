@@ -1,16 +1,17 @@
+import { JenisKelamin } from "@prisma/client";
 import { z } from "zod";
 
 export const skemaRegistrasi = z
   .object({
     email: z
       .string()
-      .email("Format email tidak valid.")
+      .email("Format alamat email yang Anda masukkan tidak valid.")
       .min(5, "Email minimal 5 karakter.")
       .max(100, "Email maksimal 100 karakter."),
 
     kataSandi: z
       .string()
-      .min(8, "Password minimal 8 karakter.")
+      .min(8, "Password minimal harus memiliki setidaknya 8 karakter.")
       .max(50, "Password maksimal 50 karakter.")
       .regex(/[A-Z]/, "Password harus mengandung huruf besar.")
       .regex(/[a-z]/, "Password harus mengandung huruf kecil.")
@@ -23,11 +24,6 @@ export const skemaRegistrasi = z
       .min(4, "Nama lengkap minimal 4 karakter.")
       .max(100, "Nama lengkap maksimal 100 karakter.")
       .optional(),
-
-    nomorTelepon: z
-      .string()
-      .regex(/^[0-9+]{10,15}$/, "Nomor telepon tidak valid.")
-      .optional(),
   })
   .refine((data) => data.kataSandi === data.konfirmasiKataSandi, {
     message: "Password dan konfirmasi password tidak cocok.",
@@ -37,8 +33,29 @@ export const skemaRegistrasi = z
 export type TipeDataRegistrasi = z.infer<typeof skemaRegistrasi>;
 
 export const skemaLogin = z.object({
-  email: z.string().email("Format email tidak valid."),
-  kataSandi: z.string().min(1, "Password wajib diisi."),
+  email: z.string().email("Alamat email yang Anda masukkan tidak valid."),
+  kataSandi: z.string().min(1, "Password tidak boleh kosong."),
 });
 
 export type TipeDataLogin = z.infer<typeof skemaLogin>;
+
+export const skemaUpdateProfil = z.object({
+  namaLengkap: z
+    .string()
+    .min(4, "Nama lengkap minimal 4 karakter.")
+    .max(100, "Nama lengkap maksimal 100 karakter.")
+    .optional(),
+
+  nomorTelepon: z
+    .string()
+    .min(9, "Nomor telepon minimal 9 karakter.")
+    .max(15, "Nomor telepon maksimal 15 karakter.")
+    .regex(/^[0-9+]{10,15}$/, "Nomor telepon tidak valid.")
+    .optional(),
+
+  jenisKelamin: z.nativeEnum(JenisKelamin).optional(),
+
+  fotoProfil: z.string().optional(),
+});
+
+export type TipeDataProfil = z.infer<typeof skemaUpdateProfil>;

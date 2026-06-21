@@ -1,5 +1,5 @@
 import bcrypt from "bcrypt";
-import { PeranPengguna, StatusAkun } from "@prisma/client";
+import { JenisKelamin, PeranPengguna, StatusAkun } from "@prisma/client";
 import prisma from "../configs/database";
 import { buatToken, TipePayloadJWT } from "../utils/jwt";
 
@@ -29,12 +29,12 @@ export type HasilLogin = {
   };
 };
 
-export async function registrasiPengguna(data: {
+// Daftar atau buat akun baru
+export const registrasiPengguna = async (data: {
   email: string;
   kataSandi: string;
   namaLengkap?: string;
-  nomorTelepon?: string;
-}): Promise<HasilRegistrasi> {
+}): Promise<HasilRegistrasi> => {
   try {
     const penggunaExist = await prisma.pengguna.findUnique({
       where: { email: data.email },
@@ -55,7 +55,6 @@ export async function registrasiPengguna(data: {
         email: data.email,
         kataSandi: hashedPassword,
         namaLengkap: data.namaLengkap || null,
-        nomorTelepon: data.nomorTelepon || null,
         peran: PeranPengguna.KLIEN,
         statusAkun: StatusAkun.AKTIF,
       },
@@ -87,18 +86,19 @@ export async function registrasiPengguna(data: {
       },
     };
   } catch (error) {
-    console.error("Error registrasi:", error);
+    console.error("Registrasi error:", error);
     return {
       sukses: false,
       pesan: "Terjadi kesalahan pada server. Silakan coba lagi nanti.",
     };
   }
-}
+};
 
-export async function loginPengguna(data: {
+// Login untuk mengakses website
+export const loginPengguna = async (data: {
   email: string;
   kataSandi: string;
-}): Promise<HasilLogin> {
+}): Promise<HasilLogin> => {
   try {
     const pengguna = await prisma.pengguna.findUnique({
       where: { email: data.email },
@@ -162,10 +162,96 @@ export async function loginPengguna(data: {
       },
     };
   } catch (error) {
-    console.error("Error login:", error);
+    console.error("Login error:", error);
     return {
       sukses: false,
       pesan: "Terjadi kesalahan pada server. Silakan coba lagi nanti.",
     };
   }
-}
+};
+
+// Data dan informasi profil pengguna
+export const profilPengguna = async (userId: string) => {
+  try {
+    const pengguna = await prisma.pengguna.findUnique({
+      where: { id: userId },
+      select: {
+        id: true,
+        email: true,
+        namaLengkap: true,
+        nomorTelepon: true,
+        jenisKelamin: true,
+        peran: true,
+        statusAkun: true,
+        fotoProfil: true,
+        dibuatPada: true,
+        terakhirLogin: true,
+      },
+    });
+
+    if (!pengguna) {
+      return {
+        sukses: false,
+        pesan: "Pengguna tidak ditemukan.",
+      };
+    }
+
+    return {
+      sukses: true,
+      data: pengguna,
+    };
+  } catch (error) {
+    console.error("Profil error:", error);
+    return {
+      sukses: false,
+      pesan: "Terjadi kesalahan pada server. Silakan coba lagi nanti.",
+    };
+  }
+};
+
+// Perbarui data dan informasi profil pengguna
+export const updateProfilPengguna = async ({
+  userId,
+  nama,
+  kontak,
+  gender,
+  fotoUrl,
+}: {
+  userId: string;
+  nama?: string;
+  kontak?: string;
+  gender?: JenisKelamin;
+  fotoUrl?: string;
+}) => {
+  try {
+    const pengguna = await prisma.pengguna.update({
+      where: { id: userId },
+      data: {
+        ...(nama && { namaLengkap: nama }),
+        ...(kontak && { nomorTelepon: kontak }),
+        ...(gender && { jenisKelamin: gender }),
+        ...(fotoUrl && { fotoProfil: fotoUrl }),
+      },
+      select: {
+        id: true,
+        email: true,
+        namaLengkap: true,
+        nomorTelepon: true,
+        jenisKelamin: true,
+        fotoProfil: true,
+        peran: true,
+      },
+    });
+
+    return {
+      sukses: true,
+      data: pengguna,
+    };
+  } catch (error) {
+    console.error("Update profil error:", error);
+    return {
+      sukses: false,
+      pesan: "Terjadi kesalahan pada server. Silakan coba lagi nanti.",
+    };
+  }
+};

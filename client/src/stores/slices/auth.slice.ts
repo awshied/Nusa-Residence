@@ -1,23 +1,19 @@
 import { getCurrentUser, isAuthenticated } from "@/services/auth.service";
+import type { TipeUser } from "@/types";
 import { createSlice, type PayloadAction } from "@reduxjs/toolkit";
-
-type TipeUser = {
-  id: string;
-  email: string;
-  namaLengkap?: string | null;
-  peran: string;
-} | null;
 
 type TipeAuthState = {
   user: TipeUser;
   isAuthenticated: boolean;
   isLoading: boolean;
+  isError: boolean;
 };
 
 const initialState: TipeAuthState = {
   user: getCurrentUser(),
   isAuthenticated: isAuthenticated(),
   isLoading: false,
+  isError: false,
 };
 
 const authSlice = createSlice({

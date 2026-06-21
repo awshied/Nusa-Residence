@@ -1,7 +1,7 @@
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import { Controller, useForm } from "react-hook-form";
 import { z } from "zod";
-import { X } from "lucide-react";
+import { Eye, EyeClosed, X } from "lucide-react";
 import { Link } from "react-router-dom";
 
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -26,6 +26,8 @@ interface Props {
 
 const LoginModal = ({ isOpen, onClose, onRegisterClick }: Props) => {
   const { login, isLoading } = useAuth();
+  const [showPassword, setShowPassword] = useState(false);
+
   const {
     control,
     handleSubmit,
@@ -42,6 +44,7 @@ const LoginModal = ({ isOpen, onClose, onRegisterClick }: Props) => {
   useEffect(() => {
     if (!isOpen) {
       reset();
+      setShowPassword(false);
     }
   }, [isOpen, reset]);
 
@@ -62,15 +65,19 @@ const LoginModal = ({ isOpen, onClose, onRegisterClick }: Props) => {
         if (e.target === e.currentTarget) onClose();
       }}
     >
-      <div className="modal-box max-w-xl px-10 bg-base-300">
-        <div className="flex flex-col items-center justify-center mt-4 mb-8 gap-6">
-          <h3 className="font-bold text-4xl font-lobster text-center text-base-content">
+      <div className="modal-box max-w-xl px-8 md:px-10 bg-base-100">
+        <div className="flex flex-col items-center justify-center mt-4 mb-4 md:mb-8 gap-3 md:gap-6">
+          <h3 className="font-bold text-2xl md:text-4xl font-lobster text-center text-base-content">
             Login
           </h3>
-          <p className="font-semibold font-mona text-center text-base-content/70">
+          <p className="font-semibold text-xs md:text-base font-mona text-center text-base-content/70">
             Silahkan masukkan alamat email dan password Anda agar dapat
             mengakses website kami
           </p>
+        </div>
+
+        <div className="divider text-xs md:text-base font-semibold font-mona text-secondary">
+          masuk dengan akun Anda
         </div>
         <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
           <div className="form-control">
@@ -109,7 +116,7 @@ const LoginModal = ({ isOpen, onClose, onRegisterClick }: Props) => {
                 <FloatingInput
                   label="Password"
                   name={field.name}
-                  type="password"
+                  type={showPassword ? "text" : "password"}
                   icon={passwordIcon}
                   value={field.value}
                   onChange={(e) => {
@@ -131,7 +138,7 @@ const LoginModal = ({ isOpen, onClose, onRegisterClick }: Props) => {
           <div className="flex items-center justify-end">
             <Link
               to="/"
-              className="font-semibold text-base-content hover:underline"
+              className="text-sm md:text-base font-semibold text-base-content hover:underline"
             >
               Lupa Password?
             </Link>
@@ -145,7 +152,7 @@ const LoginModal = ({ isOpen, onClose, onRegisterClick }: Props) => {
             {isLoading ? <span className="loading loading-bars" /> : "Masuk"}
           </button>
 
-          <p className="text-center text-sm font-mona font-semibold text-base-content">
+          <p className="text-center text-xs md:text-sm font-mona font-semibold text-base-content">
             Belum punya akun?{" "}
             <button
               type="button"
@@ -161,12 +168,30 @@ const LoginModal = ({ isOpen, onClose, onRegisterClick }: Props) => {
         </form>
 
         <div className="modal-action">
-          <button
-            className="btn btn-circle btn-ghost absolute right-6 top-4"
-            onClick={onClose}
-          >
-            <X size={20} />
-          </button>
+          <div className="absolute right-4 top-2 md:right-6 md:top-4 flex flex-col items-center gap-0 md:gap-1">
+            <button
+              type="button"
+              className="btn btn-circle btn-ghost"
+              onClick={onClose}
+              aria-label="Tutup"
+            >
+              <X className="w-4 md:w-6 text-base-content" />
+            </button>
+            <button
+              type="button"
+              className="btn btn-circle btn-ghost"
+              onClick={() => setShowPassword((prev) => !prev)}
+              aria-label={
+                showPassword ? "Sembunyikan password" : "Tampilkan password"
+              }
+            >
+              {showPassword ? (
+                <Eye className="w-4 md:w-6 text-base-content" />
+              ) : (
+                <EyeClosed className="w-4 md:w-6 text-base-content" />
+              )}
+            </button>
+          </div>
         </div>
       </div>
     </dialog>

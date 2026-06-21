@@ -1,6 +1,15 @@
 import { Request, Response } from "express";
-import { skemaLogin, skemaRegistrasi } from "../validators/auth.validator";
-import { loginPengguna, registrasiPengguna } from "../services/auth.service";
+import {
+  skemaLogin,
+  skemaRegistrasi,
+  skemaUpdateProfil,
+} from "../validators/auth.validator";
+import {
+  loginPengguna,
+  profilPengguna,
+  registrasiPengguna,
+  updateProfilPengguna,
+} from "../services/auth.service";
 
 // Daftar atau buat akun baru
 export const registrasi = async (req: Request, res: Response) => {
@@ -16,13 +25,12 @@ export const registrasi = async (req: Request, res: Response) => {
       });
     }
 
-    const { email, kataSandi, namaLengkap, nomorTelepon } = validasi.data;
+    const { email, kataSandi, namaLengkap } = validasi.data;
 
     const hasil = await registrasiPengguna({
       email,
       kataSandi,
       namaLengkap,
-      nomorTelepon,
     });
 
     const statusKode = hasil.sukses ? 201 : 400;
@@ -55,6 +63,88 @@ export const login = async (req: Request, res: Response) => {
     return res.status(statusKode).json(hasil);
   } catch (error) {
     console.error("Anda tidak dapat melakukan login:", error);
+    return res.status(500).json({
+      sukses: false,
+      pesan: "Terjadi kesalahan pada server.",
+    });
+  }
+};
+
+// Ubah data profil Anda
+export const getProfil = async (req: Request, res: Response) => {
+  try {
+    const userId = req.user?.id;
+
+    if (!userId) {
+      return res.status(401).json({
+        sukses: false,
+        pesan: "User tidak ditemukan dalam token.",
+      });
+    }
+
+    const hasil = await profilPengguna(userId);
+
+    if (!hasil.sukses) {
+      if (hasil.pesan === "Pengguna tidak ditemukan.") {
+        return res.status(404).json(hasil);
+      }
+      return res.status(500).json(hasil);
+    }
+
+    return res.status(200).json(hasil);
+  } catch (error) {
+    console.error("Anda tidak dapat melihat informasi profil Anda:", error);
+    return res.status(500).json({
+      sukses: false,
+      pesan: "Terjadi kesalahan pada server.",
+    });
+  }
+};
+
+// Perbarui data dan informasi profil pengguna
+export const pembaruanProfil = async (req: Request, res: Response) => {
+  try {
+    const userId = req.user?.id;
+
+    if (!userId) {
+      return res.status(401).json({
+        sukses: false,
+        pesan: "Pengguna tidak ditemukan.",
+      });
+    }
+
+    const validasi = skemaUpdateProfil.safeParse(req.body);
+
+    if (!validasi.success) {
+      return res.status(400).json({
+        sukses: false,
+        pesan: validasi.error.issues[0].message,
+      });
+    }
+
+    const {
+      namaLengkap: nama,
+      nomorTelepon: kontak,
+      jenisKelamin: gender,
+    } = validasi.data;
+
+    const fotoUrl = req.file?.path;
+
+    const hasil = await updateProfilPengguna({
+      userId,
+      nama,
+      kontak,
+      gender,
+      fotoUrl,
+    });
+
+    if (!hasil.sukses) {
+      return res.status(400).json(hasil);
+    }
+
+    return res.status(200).json(hasil);
+  } catch (error) {
+    console.error("Anda tidak dapat memperbarui informasi profil Anda:", error);
     return res.status(500).json({
       sukses: false,
       pesan: "Terjadi kesalahan pada server.",

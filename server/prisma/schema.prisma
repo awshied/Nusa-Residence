@@ -20,12 +20,19 @@ enum StatusAkun {
   DIBLOKIR
 }
 
+enum JenisKelamin {
+  LAINNYA
+  PRIA
+  WANITA
+}
+
 model pengguna {
   id              String         @id @default(uuid())
   email           String         @unique
   kataSandi       String         
   namaLengkap     String?
   nomorTelepon    String?
+  jenisKelamin    JenisKelamin?  @default(LAINNYA)
   peran           PeranPengguna  @default(KLIEN)
   statusAkun      StatusAkun     @default(AKTIF)
   fotoProfil      String?        

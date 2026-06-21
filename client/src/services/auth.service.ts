@@ -1,29 +1,12 @@
 import api from "@/lib/api";
-
-export type TipeDataRegistrasi = {
-  email: string;
-  kataSandi: string;
-  konfirmasiKataSandi: string;
-  namaLengkap?: string;
-  nomorTelepon?: string;
-};
-
-export type TipeDataMasuk = {
-  email: string;
-  kataSandi: string;
-};
-
-export type TipeResponseAuth = {
-  sukses: boolean;
-  pesan: string;
-  data?: {
-    id: string;
-    email: string;
-    namaLengkap?: string | null;
-    peran: string;
-    token: string;
-  };
-};
+import type {
+  TipeDataMasuk,
+  TipeDataRegistrasi,
+  TipeProfil,
+  TipeResponseAuth,
+  TipeResponseUpdateProfil,
+  UpdateProfilePayload,
+} from "@/types";
 
 export const registrasi = async (
   data: TipeDataRegistrasi,
@@ -51,6 +34,9 @@ export const simpanSession = (data: TipeResponseAuth["data"]): void => {
         id: data.id,
         email: data.email,
         namaLengkap: data.namaLengkap,
+        nomorTelepon: data.nomorTelepon || null,
+        jenisKelamin: data.jenisKelamin,
+        fotoProfil: data.fotoProfil || null,
         peran: data.peran,
       }),
     );
@@ -61,6 +47,7 @@ export const getCurrentUser = (): {
   id: string;
   email: string;
   namaLengkap?: string | null;
+  fotoProfil?: string | null;
   peran: string;
 } | null => {
   const userStr = localStorage.getItem("user");
@@ -74,4 +61,43 @@ export const getCurrentUser = (): {
 
 export const isAuthenticated = (): boolean => {
   return !!localStorage.getItem("token");
+};
+
+export const getProfilPengguna = async (): Promise<{
+  sukses: boolean;
+  data?: TipeProfil;
+  pesan?: string;
+}> => {
+  const response = await api.get("/auth/profil");
+  return response.data;
+};
+
+export const pembaruanProfil = async (
+  payload: UpdateProfilePayload,
+): Promise<TipeResponseUpdateProfil> => {
+  const formData = new FormData();
+
+  if (payload.namaLengkap) {
+    formData.append("namaLengkap", payload.namaLengkap);
+  }
+
+  if (payload.nomorTelepon) {
+    formData.append("nomorTelepon", payload.nomorTelepon);
+  }
+
+  if (payload.jenisKelamin) {
+    formData.append("jenisKelamin", payload.jenisKelamin);
+  }
+
+  if (payload.fotoProfil) {
+    formData.append("fotoProfil", payload.fotoProfil);
+  }
+
+  const response = await api.post("/auth/profil/ubah", formData, {
+    headers: {
+      "Content-Type": "multipart/form-data",
+    },
+  });
+
+  return response.data;
 };
