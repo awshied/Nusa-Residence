@@ -12,6 +12,16 @@ export type TipeDataMasuk = {
   kataSandi: string;
 };
 
+export type TipeDataLupaPassword = {
+  email: string;
+};
+
+export type TipeDataResetPassword = {
+  token: string;
+  kataSandi: string;
+  konfirmasiKataSandi: string;
+};
+
 export type TipeResponseAuth = {
   sukses: boolean;
   pesan: string;

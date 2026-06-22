@@ -4,6 +4,7 @@ import { BrowserRouter, Routes, Route } from "react-router-dom";
 import Navbar from "./components/layout/Navbar";
 
 import Beranda from "@/pages/Beranda";
+import ResetPassword from "@/pages/ResetPassword";
 
 const App = () => {
   useEffect(() => {
@@ -20,6 +21,7 @@ const App = () => {
         <Navbar />
         <Routes>
           <Route path="/" element={<Beranda />} />
+          <Route path="/reset-password" element={<ResetPassword />} />
         </Routes>
       </div>
     </BrowserRouter>

@@ -4,6 +4,8 @@ import {
   login,
   registrasi,
   pembaruanProfil,
+  forgetPassword,
+  resetPassword,
 } from "../controllers/auth.controller";
 import { verifikasiAutentikasi } from "../middlewares/auth.middleware";
 import {
@@ -15,8 +17,10 @@ const router = Router();
 
 router.post("/registrasi", registrasi);
 router.post("/login", login);
-router.get("/profil", verifikasiAutentikasi, getProfil);
+router.post("/lupa-password", forgetPassword);
+router.post("/reset-password", resetPassword);
 
+router.get("/profil", verifikasiAutentikasi, getProfil);
 router.post(
   "/profil/ubah",
   verifikasiAutentikasi,

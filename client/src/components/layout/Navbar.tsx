@@ -24,6 +24,7 @@ import emptyProfile from "@/assets/empty-profile.png";
 import userProfileIcon from "@/assets/icons/username.png";
 import settingIcon from "@/assets/icons/setting.png";
 import logoutIcon from "@/assets/icons/logout.png";
+import LupaPasswordModal from "../auth/LupaPasswordModal";
 
 type NavLink = {
   path: string;
@@ -42,6 +43,7 @@ const Navbar = () => {
   const [mounted, setMounted] = useState(false);
   const [isRegisterOpen, setIsRegisterOpen] = useState(false);
   const [isLoginOpen, setIsLoginOpen] = useState(false);
+  const [isForgetPasswordOpen, setIsForgetPasswordOpen] = useState(false);
   const [isProfileOpen, setIsProfileOpen] = useState(false);
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
 
@@ -413,6 +415,10 @@ const Navbar = () => {
           setIsLoginOpen(false);
           setIsRegisterOpen(true);
         }}
+        onLupaPasswordClick={() => {
+          setIsLoginOpen(false);
+          setIsForgetPasswordOpen(true);
+        }}
       />
 
       <RegistrasiModal
@@ -420,6 +426,15 @@ const Navbar = () => {
         onClose={() => setIsRegisterOpen(false)}
         onLoginClick={() => {
           setIsRegisterOpen(false);
+          setIsLoginOpen(true);
+        }}
+      />
+
+      <LupaPasswordModal
+        isOpen={isForgetPasswordOpen}
+        onClose={() => setIsForgetPasswordOpen(false)}
+        onLoginClick={() => {
+          setIsForgetPasswordOpen(false);
           setIsLoginOpen(true);
         }}
       />

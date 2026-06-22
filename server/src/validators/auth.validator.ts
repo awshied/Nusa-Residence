@@ -59,3 +59,28 @@ export const skemaUpdateProfil = z.object({
 });
 
 export type TipeDataProfil = z.infer<typeof skemaUpdateProfil>;
+
+export const skemaLupaPassword = z.object({
+  email: z.string().email("Format email Anda tidak valid."),
+});
+
+export type TipeDataLupaPassword = z.infer<typeof skemaLupaPassword>;
+
+export const skemaResetPassword = z
+  .object({
+    token: z.string().min(1, "Token wajib diisi"),
+    kataSandi: z
+      .string()
+      .min(8, "Password minimal harus memiliki setidaknya 8 karakter.")
+      .max(50, "Password maksimal 50 karakter.")
+      .regex(/[A-Z]/, "Password harus mengandung huruf besar.")
+      .regex(/[a-z]/, "Password harus mengandung huruf kecil.")
+      .regex(/[0-9]/, "Password harus mengandung angka."),
+    konfirmasiKataSandi: z.string(),
+  })
+  .refine((data) => data.kataSandi === data.konfirmasiKataSandi, {
+    message: "Password dan konfirmasi password tidak cocok.",
+    path: ["konfirmasiKataSandi"],
+  });
+
+export type TipeDataResetPassword = z.infer<typeof skemaResetPassword>;

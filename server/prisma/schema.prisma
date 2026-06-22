@@ -27,23 +27,26 @@ enum JenisKelamin {
 }
 
 model pengguna {
-  id              String         @id @default(uuid())
-  email           String         @unique
-  kataSandi       String         
-  namaLengkap     String?
-  nomorTelepon    String?
-  jenisKelamin    JenisKelamin?  @default(LAINNYA)
-  peran           PeranPengguna  @default(KLIEN)
-  statusAkun      StatusAkun     @default(AKTIF)
-  fotoProfil      String?        
-  terakhirLogin   DateTime?
-  dibuatPada      DateTime       @default(now())
-  diperbaruiPada  DateTime       @updatedAt
+  id                   String         @id @default(uuid())
+  email                String         @unique
+  kataSandi            String         
+  namaLengkap          String?
+  nomorTelepon         String?
+  jenisKelamin         JenisKelamin?  @default(LAINNYA)
+  peran                PeranPengguna  @default(KLIEN)
+  statusAkun           StatusAkun     @default(AKTIF)
+  fotoProfil           String?        
+  terakhirLogin        DateTime?
+  dibuatPada           DateTime       @default(now())
+  diperbaruiPada       DateTime       @updatedAt
+
+  resetToken           String?        @unique
+  resetTokenExpiresAt  DateTime?
   
-  dibuatOlehId    String?        @map("dibuat_oleh_id")
-  dibuatOleh      pengguna?      @relation("AdminDibuatOleh", fields: [dibuatOlehId], references: [id])
+  dibuatOlehId         String?        @map("dibuat_oleh_id")
+  dibuatOleh           pengguna?      @relation("AdminDibuatOleh", fields: [dibuatOlehId], references: [id])
   
-  adminYangDibuat pengguna[]     @relation("AdminDibuatOleh")
+  adminYangDibuat      pengguna[]     @relation("AdminDibuatOleh")
   
   @@map("pengguna")
 }

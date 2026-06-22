@@ -1,11 +1,15 @@
 import { Request, Response } from "express";
 import {
   skemaLogin,
+  skemaLupaPassword,
   skemaRegistrasi,
+  skemaResetPassword,
   skemaUpdateProfil,
 } from "../validators/auth.validator";
 import {
+  buatUlangPassword,
   loginPengguna,
+  lupaPassword,
   profilPengguna,
   registrasiPengguna,
   updateProfilPengguna,
@@ -70,7 +74,57 @@ export const login = async (req: Request, res: Response) => {
   }
 };
 
-// Ubah data profil Anda
+// Generate reset token untuk pengguna yang lupa password
+export const forgetPassword = async (req: Request, res: Response) => {
+  try {
+    const validasi = skemaLupaPassword.safeParse(req.body);
+
+    if (!validasi.success) {
+      return res.status(400).json({
+        sukses: false,
+        pesan: validasi.error.issues[0].message,
+      });
+    }
+
+    const { email } = validasi.data;
+    const hasil = await lupaPassword(email);
+
+    return res.status(hasil.sukses ? 200 : 400).json(hasil);
+  } catch (error) {
+    console.error("Anda tidak dapat melupakan password Anda:", error);
+    return res.status(500).json({
+      sukses: false,
+      pesan: "Terjadi kesalahan pada server.",
+    });
+  }
+};
+
+// Verifikasi token dan buat password baru
+export const resetPassword = async (req: Request, res: Response) => {
+  try {
+    const validasi = skemaResetPassword.safeParse(req.body);
+
+    if (!validasi.success) {
+      return res.status(400).json({
+        sukses: false,
+        pesan: validasi.error.issues[0].message,
+      });
+    }
+
+    const { token, kataSandi } = validasi.data;
+    const hasil = await buatUlangPassword(token, kataSandi);
+
+    return res.status(hasil.sukses ? 200 : 400).json(hasil);
+  } catch (error) {
+    console.error("Anda tidak dapat membuat ulang password Anda:", error);
+    return res.status(500).json({
+      sukses: false,
+      pesan: "Terjadi kesalahan pada server.",
+    });
+  }
+};
+
+// Data dan informasi profil pengguna
 export const getProfil = async (req: Request, res: Response) => {
   try {
     const userId = req.user?.id;

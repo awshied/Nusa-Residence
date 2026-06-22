@@ -1,7 +1,9 @@
 import api from "@/lib/api";
 import type {
+  TipeDataLupaPassword,
   TipeDataMasuk,
   TipeDataRegistrasi,
+  TipeDataResetPassword,
   TipeProfil,
   TipeResponseAuth,
   TipeResponseUpdateProfil,
@@ -17,6 +19,20 @@ export const registrasi = async (
 
 export const login = async (data: TipeDataMasuk): Promise<TipeResponseAuth> => {
   const response = await api.post("/auth/login", data);
+  return response.data;
+};
+
+export const lupaPassword = async (
+  data: TipeDataLupaPassword,
+): Promise<TipeResponseAuth> => {
+  const response = await api.post("/auth/lupa-password", data);
+  return response.data;
+};
+
+export const resetPassword = async (
+  data: TipeDataResetPassword,
+): Promise<TipeResponseAuth> => {
+  const response = await api.post("/auth/reset-password", data);
   return response.data;
 };
 

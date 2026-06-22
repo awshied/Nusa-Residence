@@ -2,15 +2,19 @@ import {
   getCurrentUser,
   login,
   logout,
+  lupaPassword,
   pembaruanProfil,
   registrasi,
+  resetPassword,
   simpanSession,
 } from "@/services/auth.service";
 import { setLogout, setLoading, setUser } from "@/stores/slices/auth.slice";
 import type { AppDispatch, RootState } from "@/stores/store";
 import type {
+  TipeDataLupaPassword,
   TipeDataMasuk,
   TipeDataRegistrasi,
+  TipeDataResetPassword,
   UpdateProfilePayload,
 } from "@/types";
 import { useSelector, useDispatch } from "react-redux";
@@ -82,6 +86,57 @@ export const useAuth = () => {
     }
   };
 
+  const handleLupaPassword = async (data: TipeDataLupaPassword) => {
+    dispatch(setLoading(true));
+    try {
+      const response = await lupaPassword(data);
+      if (response.sukses) {
+        toast.success(response.pesan);
+        return true;
+      } else {
+        toast.error(response.pesan);
+        return false;
+      }
+    } catch {
+      toast.error(
+        "Terjadi kesalahan pada lupa password, mohon untuk mencobanya sekali lagi.",
+      );
+      return false;
+    } finally {
+      dispatch(setLoading(false));
+    }
+  };
+
+  const handleResetPassword = async (data: TipeDataResetPassword) => {
+    dispatch(setLoading(true));
+    try {
+      const response = await resetPassword(data);
+      if (response.sukses && response.data) {
+        simpanSession(response.data);
+        dispatch(
+          setUser({
+            id: response.data?.id,
+            email: response.data?.email,
+            namaLengkap: response.data?.namaLengkap,
+            peran: response.data?.peran,
+          }),
+        );
+        toast.success(response.pesan);
+        return true;
+      } else {
+        toast.error(response.pesan);
+        return false;
+      }
+    } catch {
+      toast.error(
+        "Terjadi kesalahan pada reset password, mohon untuk mencobanya sekali lagi.",
+      );
+      return false;
+    } finally {
+      dispatch(setLoading(false));
+    }
+  };
+
   const handleLogout = () => {
     logout();
     dispatch(setLogout());
@@ -142,6 +197,8 @@ export const useAuth = () => {
     isError,
     registrasi: handleRegistrasi,
     login: handleLogin,
+    lupaPassword: handleLupaPassword,
+    resetPassword: handleResetPassword,
     logout: handleLogout,
     updateProfil: handleUpdateProfil,
     setUser: updateUser,

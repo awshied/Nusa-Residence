@@ -1,7 +1,9 @@
 import bcrypt from "bcrypt";
+import crypto from "crypto";
 import { JenisKelamin, PeranPengguna, StatusAkun } from "@prisma/client";
 import prisma from "../configs/database";
 import { buatToken, TipePayloadJWT } from "../utils/jwt";
+import { kirimEmailResetPassword } from "../configs/email";
 
 const SALT_ROUNDS = 10;
 
@@ -163,6 +165,142 @@ export const loginPengguna = async (data: {
     };
   } catch (error) {
     console.error("Login error:", error);
+    return {
+      sukses: false,
+      pesan: "Terjadi kesalahan pada server. Silakan coba lagi nanti.",
+    };
+  }
+};
+
+// Generate reset token untuk pengguna yang lupa password
+export const lupaPassword = async (email: string) => {
+  try {
+    if (!process.env.CLIENT_URL) {
+      console.error("Variabel CLIENT_URL tidak diatur.");
+      return {
+        sukses: false,
+        pesan: "Terjadi kesalahan pada server. Silakan coba lagi nanti.",
+      };
+    }
+
+    const pengguna = await prisma.pengguna.findUnique({
+      where: { email },
+      select: {
+        id: true,
+        email: true,
+        namaLengkap: true,
+        statusAkun: true,
+      },
+    });
+
+    if (!pengguna) {
+      return {
+        sukses: true,
+        pesan:
+          "Jika email terdaftar, link reset password akan dikirim ke email Anda.",
+      };
+    }
+
+    if (pengguna.statusAkun !== StatusAkun.AKTIF) {
+      return {
+        sukses: false,
+        pesan: "Akun Anda tidak aktif. Silakan hubungi admin.",
+      };
+    }
+
+    const resetToken = crypto.randomBytes(32).toString("hex");
+    const hashedToken = crypto
+      .createHash("sha256")
+      .update(resetToken)
+      .digest("hex");
+    const resetTokenExpiresAt = new Date(Date.now() + 60 * 60 * 1000);
+
+    await prisma.pengguna.update({
+      where: { id: pengguna.id },
+      data: {
+        resetToken: hashedToken,
+        resetTokenExpiresAt,
+      },
+    });
+
+    const resetLink = `${process.env.CLIENT_URL}/reset-password?token=${resetToken}`;
+
+    const emailResult = await kirimEmailResetPassword(
+      pengguna.email,
+      pengguna.namaLengkap,
+      resetLink,
+    );
+
+    if (!emailResult.sukses) {
+      console.error("Email gagal dikirim untuk:", email);
+      return {
+        sukses: true,
+        pesan: "Link reset password gagal dikirim. Silakan coba lagi nanti.",
+        emailError: true,
+      };
+    }
+
+    return {
+      sukses: true,
+      pesan:
+        "Link reset password hanya berlaku 1 jam saja dan telah kami kirimkan ke email Anda.",
+    };
+  } catch (error) {
+    console.error("Lupa password error:", error);
+    return {
+      sukses: false,
+      pesan: "Terjadi kesalahan pada server. Silakan coba lagi nanti.",
+    };
+  }
+};
+
+// Verifikasi token dan buat password baru
+export const buatUlangPassword = async (
+  token: string,
+  passwordBaru: string,
+) => {
+  try {
+    const hashedToken = crypto.createHash("sha256").update(token).digest("hex");
+    const pengguna = await prisma.pengguna.findFirst({
+      where: {
+        resetToken: hashedToken,
+        resetTokenExpiresAt: {
+          gt: new Date(),
+        },
+      },
+      select: {
+        id: true,
+        email: true,
+        resetToken: true,
+        resetTokenExpiresAt: true,
+      },
+    });
+
+    if (!pengguna) {
+      return {
+        sukses: false,
+        pesan: "Token reset password tidak valid atau sudah kadaluarsa.",
+      };
+    }
+
+    const hashedPassword = await bcrypt.hash(passwordBaru, 10);
+
+    await prisma.pengguna.update({
+      where: { id: pengguna.id },
+      data: {
+        kataSandi: hashedPassword,
+        resetToken: null,
+        resetTokenExpiresAt: null,
+      },
+    });
+
+    return {
+      sukses: true,
+      pesan:
+        "Password berhasil direset. Silakan login dengan password baru Anda.",
+    };
+  } catch (error) {
+    console.error("Buat ulang password error:", error);
     return {
       sukses: false,
       pesan: "Terjadi kesalahan pada server. Silakan coba lagi nanti.",
