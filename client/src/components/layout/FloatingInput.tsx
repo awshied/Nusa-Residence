@@ -13,7 +13,7 @@ interface FloatingInputProps {
   label: string;
   name: string;
   type?: InputType;
-  value: string | boolean;
+  value: string | boolean | undefined;
   onChange: (
     e:
       | React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>
@@ -38,6 +38,16 @@ const FloatingInput: React.FC<FloatingInputProps> = ({
       ? value === true || value === false
       : typeof value === "string" && value.length > 0);
 
+  const getSafeValue = (): string => {
+    if (typeof value === "string") return value;
+    return "";
+  };
+
+  const getSafeBoolean = (): boolean => {
+    if (typeof value === "boolean") return value;
+    return false;
+  };
+
   return (
     <div className="relative w-full">
       <label
@@ -52,7 +62,7 @@ const FloatingInput: React.FC<FloatingInputProps> = ({
       {type === "textarea" ? (
         <textarea
           name={name}
-          value={value as string}
+          value={getSafeValue()}
           onChange={onChange as React.ChangeEventHandler<HTMLTextAreaElement>}
           onFocus={() => setFocused(true)}
           onBlur={() => setFocused(false)}
@@ -63,7 +73,7 @@ const FloatingInput: React.FC<FloatingInputProps> = ({
         <input
           type="checkbox"
           name={name}
-          checked={value as boolean}
+          checked={getSafeBoolean()}
           onChange={(e: React.ChangeEvent<HTMLInputElement>) =>
             onChange({ target: { name, value: e.target.checked } })
           }
@@ -75,7 +85,7 @@ const FloatingInput: React.FC<FloatingInputProps> = ({
         <input
           type={type}
           name={name}
-          value={value as string}
+          value={getSafeValue()}
           onChange={onChange as React.ChangeEventHandler<HTMLInputElement>}
           onFocus={() => setFocused(true)}
           onBlur={() => setFocused(false)}

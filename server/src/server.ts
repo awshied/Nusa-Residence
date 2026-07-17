@@ -11,6 +11,8 @@ import http from "http";
 import { prisma } from "./configs/database";
 
 import authRoutes from "./routes/auth.route";
+import adminRoutes from "./routes/admin.route";
+import propertiRoutes from "./routes/properti.route";
 
 const app = express();
 const PORT = process.env.PORT || 5000;
@@ -22,6 +24,8 @@ app.use(express.json({ limit: "5mb" }));
 app.use(express.urlencoded({ extended: true }));
 
 app.use("/api/auth", authRoutes);
+app.use("/api/admin", adminRoutes);
+app.use("/api/properti", propertiRoutes);
 
 app.get("/api/nusa", (_req, res) => {
   res.status(200).json({

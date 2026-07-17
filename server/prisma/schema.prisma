@@ -26,27 +26,212 @@ enum JenisKelamin {
   WANITA
 }
 
+enum KategoriProperti {
+  HOTEL
+  VILLA
+  APARTEMEN
+  KOSAN
+  KONTRAKAN
+}
+
+enum Amenities {
+  AIR_CONDITIONER
+  TELEVISI
+  WIFI
+  KOLAM_RENANG
+  PARKIR
+  BATHUB
+  RESTORAN
+  GYM
+  SPA
+  MUSHOLA
+  MINI_BAR
+  KITCHENETTE
+  MESIN_CUCI
+  KIPAS_ANGIN
+  AIR_PANAS
+  BREAKFAST
+  ROOM_SERVICE
+  RESEPSIONIS_24JAM
+  KEAMANAN_24JAM
+  AREA_BERMAIN_ANAK
+  TAMAN
+  BALKON
+  DAPUR_UMUM
+  RUANG_TAMU
+  AIR_ISI_ULANG
+  LISTRIK
+  GAS_ALAM
+  KAMAR_MANDI_DALAM
+  KAMAR_MANDI_LUAR
+}
+
+enum KategoriMenuHotel {
+  MAKANAN
+  MINUMAN
+}
+
 model pengguna {
-  id                   String         @id @default(uuid())
-  email                String         @unique
+  id                   String               @id @default(uuid())
+  email                String               @unique
   kataSandi            String         
   namaLengkap          String?
   nomorTelepon         String?
-  jenisKelamin         JenisKelamin?  @default(LAINNYA)
-  peran                PeranPengguna  @default(KLIEN)
-  statusAkun           StatusAkun     @default(AKTIF)
+  jenisKelamin         JenisKelamin?        @default(LAINNYA)
+  peran                PeranPengguna        @default(KLIEN)
+  statusAkun           StatusAkun           @default(AKTIF)
   fotoProfil           String?        
   terakhirLogin        DateTime?
-  dibuatPada           DateTime       @default(now())
-  diperbaruiPada       DateTime       @updatedAt
+  dibuatPada           DateTime             @default(now())
+  diperbaruiPada       DateTime             @updatedAt
+  booking              booking[]
 
-  resetToken           String?        @unique
+  resetToken           String?              @unique
   resetTokenExpiresAt  DateTime?
   
-  dibuatOlehId         String?        @map("dibuat_oleh_id")
-  dibuatOleh           pengguna?      @relation("AdminDibuatOleh", fields: [dibuatOlehId], references: [id])
+  dibuatOlehId         String?              @map("dibuat_oleh_id")
+  dibuatOleh           pengguna?            @relation("AdminDibuatOleh", fields: [dibuatOlehId], references: [id])
+  adminYangDibuat      pengguna[]           @relation("AdminDibuatOleh")
   
-  adminYangDibuat      pengguna[]     @relation("AdminDibuatOleh")
+  propertiDikelola     properti?            @relation("AdminKelolaProperti")
+  propertiDimiliki     properti[]           @relation("PemilikMilikProperti")
   
   @@map("pengguna")
+}
+
+model properti {
+  id                   String               @id @default(uuid())
+  nama                 String
+  kategori             KategoriProperti
+  namaJalan            String               @map("nama_jalan")
+  kelurahan            String
+  kecamatan            String
+  kabupatenKota        String               @map("kabupaten_kota")
+  provinsi             String
+  kodePos              String?              @map("kode_pos")
+
+  latitude             Float                @map("latitude")
+  longitude            Float                @map("longitude")
+  lokasi               String?              @map("lokasi")
+  nomorTelepon         String?              @map("nomor_telepon")
+  luasBangunan         Float?               @map("luas_bangunan")
+  deskripsi            String?              @db.Text
+  amenities            Amenities[]          @default([])
+  ratingRataRata       Float?               @default(0) @map("rating_rata_rata")
+  jumlahRating         Int?                 @default(0) @map("jumlah_rating")
+  dibuatPada           DateTime             @default(now()) @map("dibuat_pada")
+  diperbaruiPada       DateTime             @updatedAt @map("diperbarui_pada")
+  
+  pemilikId            String               @map("pemilik_id")
+  pemilik              pengguna             @relation("PemilikMilikProperti", fields: [pemilikId], references: [id])
+  adminId              String?              @unique @map("admin_id")
+  admin                pengguna?            @relation("AdminKelolaProperti", fields: [adminId], references: [id])
+  
+  gambar               propertiGambar[]
+  tipeKamar            tipeKamar[]
+  fasilitas            propertiFasilitas[]
+  menu                 menu[]
+  booking              booking[]
+  
+  @@map("properti")
+}
+
+model propertiGambar {
+  id                   String               @id @default(uuid())
+  propertiId           String               @map("properti_id")
+  properti             properti             @relation(fields: [propertiId], references: [id])
+  url                  String               @db.Text
+  isUtama              Boolean              @default(false) @map("is_utama")
+  urutan               Int                  @default(0)
+  dibuatPada           DateTime             @default(now()) @map("dibuat_pada")
+  
+  @@map("properti_gambar")
+}
+
+model tipeKamar {
+  id                   String               @id @default(uuid())
+  propertiId           String               @map("properti_id")
+  properti             properti             @relation(fields: [propertiId], references: [id])
+  nama                 String        
+  deskripsi            String?              @db.Text
+  kapasitas            Int            
+  jumlahTempatTidur    Int                  @map("jumlah_tempat_tidur")
+  jumlahKamarMandi     Int                  @map("jumlah_kamar_mandi")
+  luas                 Float?
+  hargaPerMalam        Float?               @map("harga_per_malam")
+  hargaPerBulan        Float?               @map("harga_per_bulan")
+  jumlahUnit           Int                  @default(1) @map("jumlah_unit")
+  tersedia             Int                  @default(1)
+  gambar               String?              @db.Text
+  dibuatPada           DateTime             @default(now()) @map("dibuat_pada")
+  diperbaruiPada       DateTime             @updatedAt @map("diperbarui_pada")
+  
+  bookingItem          bookingItem[]
+  
+  @@map("tipe_kamar")
+}
+
+model propertiFasilitas {
+  id                   String               @id @default(uuid())
+  propertiId           String               @map("properti_id")
+  properti             properti             @relation(fields: [propertiId], references: [id])
+  nama                 String
+  icon                 String?
+  dibuatPada           DateTime             @default(now()) @map("dibuat_pada")
+  
+  @@map("properti_fasilitas")
+}
+
+model menu {
+  id                   String               @id @default(uuid())
+  propertiId           String               @map("properti_id")
+  properti             properti             @relation(fields: [propertiId], references: [id])
+  nama                 String
+  kategori             KategoriMenuHotel    @default(MAKANAN)        
+  deskripsi            String?              @db.Text
+  harga                Float?
+  isGratis             Boolean              @default(true) @map("is_gratis")
+  gambar               String?              @db.Text
+  tersedia             Boolean              @default(true)
+  dibuatPada           DateTime             @default(now()) @map("dibuat_pada")
+  diperbaruiPada       DateTime             @updatedAt @map("diperbarui_pada")
+  
+  @@map("menu")
+}
+
+model booking {
+  id                   String               @id @default(uuid())
+  kodeBooking          String               @unique @map("kode_booking")
+  userId               String               @map("user_id")
+  user                 pengguna             @relation(fields: [userId], references: [id])
+  propertiId           String               @map("properti_id")
+  properti             properti             @relation(fields: [propertiId], references: [id])
+  checkInDate          DateTime             @map("check_in_date")
+  checkOutDate         DateTime             @map("check_out_date")
+  totalHarga           Float                @map("total_harga")
+  statusPembayaran     String               @default("PENDING") @map("status_pembayaran")
+  statusBooking        String               @default("MENUNGGU") @map("status_booking")
+  midtransOrderId      String?              @unique @map("midtrans_order_id")
+  snapToken            String?              @map("snap_token")
+  snapRedirectUrl      String?              @map("snap_redirect_url")
+  catatan              String?              @db.Text
+  dibuatPada           DateTime             @default(now()) @map("dibuat_pada")
+  diperbaruiPada       DateTime             @updatedAt @map("diperbarui_pada")
+  
+  bookingItem          bookingItem[]
+  
+  @@map("booking")
+}
+
+model bookingItem {
+  id                   String               @id @default(uuid())
+  bookingId            String               @map("booking_id")
+  booking              booking              @relation(fields: [bookingId], references: [id])
+  tipeKamarId          String               @map("tipe_kamar_id")
+  tipeKamar            tipeKamar            @relation(fields: [tipeKamarId], references: [id])
+  jumlah               Int                  @default(1)
+  hargaPerUnit         Float                @map("harga_per_unit")
+  subtotal             Float
+  
+  @@map("booking_item")
 }

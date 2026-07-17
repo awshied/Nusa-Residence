@@ -19,9 +19,11 @@ import type {
 } from "@/types";
 import { useSelector, useDispatch } from "react-redux";
 import { toast } from "sonner";
+import { useNavigate } from "react-router-dom";
 
 export const useAuth = () => {
   const dispatch = useDispatch<AppDispatch>();
+  const navigate = useNavigate();
   const { user, isAuthenticated, isLoading, isError } = useSelector(
     (state: RootState) => state.auth,
   );
@@ -37,10 +39,13 @@ export const useAuth = () => {
             id: response.data.id,
             email: response.data.email,
             namaLengkap: response.data.namaLengkap,
+            fotoProfil: response.data.fotoProfil || null,
             peran: response.data.peran,
           }),
         );
         toast.success(response.pesan);
+
+        navigate("/");
         return true;
       } else {
         toast.error(response.pesan);
@@ -67,10 +72,18 @@ export const useAuth = () => {
             id: response.data.id,
             email: response.data.email,
             namaLengkap: response.data.namaLengkap,
+            fotoProfil: response.data.fotoProfil || null,
             peran: response.data.peran,
           }),
         );
         toast.success(response.pesan);
+
+        if (response.data.peran === "PEMILIK") {
+          navigate("/owner/dashboard");
+        } else {
+          navigate("/");
+        }
+
         return true;
       } else {
         toast.error(response.pesan);
@@ -141,6 +154,7 @@ export const useAuth = () => {
     logout();
     dispatch(setLogout());
     toast.info("Anda telah keluar dari akun.");
+    navigate("/");
   };
 
   const updateUser = (userData: Parameters<typeof setUser>[0]) => {

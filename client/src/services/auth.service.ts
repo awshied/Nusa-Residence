@@ -79,6 +79,22 @@ export const isAuthenticated = (): boolean => {
   return !!localStorage.getItem("token");
 };
 
+export const cekOwner = async (): Promise<{
+  sukses: boolean;
+  exists: boolean;
+  data?: TipeProfil;
+}> => {
+  const response = await api.get("/auth/cek-owner");
+  return response.data;
+};
+
+export const buatOwner = async (data: {
+  data: TipeDataRegistrasi;
+}): Promise<TipeResponseAuth> => {
+  const response = await api.post("/auth/buat-owner", data);
+  return response.data;
+};
+
 export const getProfilPengguna = async (): Promise<{
   sukses: boolean;
   data?: TipeProfil;

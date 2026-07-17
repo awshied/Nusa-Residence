@@ -1,5 +1,6 @@
 import { Request, Response } from "express";
 import {
+  skemaBuatOwner,
   skemaLogin,
   skemaLupaPassword,
   skemaRegistrasi,
@@ -7,7 +8,9 @@ import {
   skemaUpdateProfil,
 } from "../validators/auth.validator";
 import {
+  buatOwnerPertama,
   buatUlangPassword,
+  cekOwner,
   loginPengguna,
   lupaPassword,
   profilPengguna,
@@ -15,7 +18,7 @@ import {
   updateProfilPengguna,
 } from "../services/auth.service";
 
-// Daftar atau buat akun baru
+// Daftar atau buat akun baru (Klien Only)
 export const registrasi = async (req: Request, res: Response) => {
   try {
     const validasi = skemaRegistrasi.safeParse(req.body);
@@ -117,6 +120,52 @@ export const resetPassword = async (req: Request, res: Response) => {
     return res.status(hasil.sukses ? 200 : 400).json(hasil);
   } catch (error) {
     console.error("Anda tidak dapat membuat ulang password Anda:", error);
+    return res.status(500).json({
+      sukses: false,
+      pesan: "Terjadi kesalahan pada server.",
+    });
+  }
+};
+
+// Cek Owner apakah suaah ada (System Only)
+export const ketersediaanOwner = async (req: Request, res: Response) => {
+  try {
+    const hasil = await cekOwner();
+    return res.status(200).json(hasil);
+  } catch (error) {
+    console.error("Cek Owner error:", error);
+    return res.status(500).json({
+      sukses: false,
+      pesan: "Terjadi kesalahan pada server.",
+    });
+  }
+};
+
+// Buat Owner Pertama (System Only)
+export const bikinOwner = async (req: Request, res: Response) => {
+  try {
+    const validasi = skemaBuatOwner.safeParse(req.body);
+
+    if (!validasi.success) {
+      return res.status(400).json({
+        sukses: false,
+        pesan: validasi.error.issues[0].message,
+        detail: validasi.error.issues,
+      });
+    }
+
+    const { email, kataSandi, namaLengkap, nomorTelepon } = validasi.data;
+    const hasil = await buatOwnerPertama({
+      email,
+      kataSandi,
+      namaLengkap,
+      nomorTelepon,
+    });
+
+    const statusKode = hasil.sukses ? 201 : 400;
+    return res.status(statusKode).json(hasil);
+  } catch (error) {
+    console.error("Buat Owner error:", error);
     return res.status(500).json({
       sukses: false,
       pesan: "Terjadi kesalahan pada server.",

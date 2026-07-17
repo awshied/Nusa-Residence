@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { Link, useLocation, useNavigate } from "react-router-dom";
+import { Link, useLocation, Outlet } from "react-router-dom";
 import { ChevronDown, Menu, X } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 
@@ -25,6 +25,7 @@ import userProfileIcon from "@/assets/icons/username.png";
 import settingIcon from "@/assets/icons/setting.png";
 import logoutIcon from "@/assets/icons/logout.png";
 import LupaPasswordModal from "../auth/LupaPasswordModal";
+import LogoutModal from "./LogoutModal";
 
 type NavLink = {
   path: string;
@@ -36,14 +37,14 @@ type NavLink = {
 
 const Navbar = () => {
   const location = useLocation();
-  const navigate = useNavigate();
-  const { isAuthenticated, user, logout } = useAuth();
+  const { isAuthenticated, user } = useAuth();
 
   const [scrolled, setScrolled] = useState(false);
   const [mounted, setMounted] = useState(false);
   const [isRegisterOpen, setIsRegisterOpen] = useState(false);
   const [isLoginOpen, setIsLoginOpen] = useState(false);
   const [isForgetPasswordOpen, setIsForgetPasswordOpen] = useState(false);
+  const [isLogoutOpen, setIsLogoutOpen] = useState(false);
   const [isProfileOpen, setIsProfileOpen] = useState(false);
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
 
@@ -74,11 +75,6 @@ const Navbar = () => {
       iconFill: orderHistoryFill,
     },
   ];
-
-  const handleLogout = () => {
-    logout();
-    navigate("/");
-  };
 
   useEffect(() => {
     setMounted(true);
@@ -228,7 +224,7 @@ const Navbar = () => {
                         </span>
                       </Link>
                       <button
-                        onClick={handleLogout}
+                        onClick={() => setIsLogoutOpen(true)}
                         className="flex items-center gap-3 px-4 py-2 hover:bg-error/10 rounded-lg cursor-pointer transition-colors"
                       >
                         <img
@@ -385,7 +381,7 @@ const Navbar = () => {
                       </span>
                     </Link>
                     <button
-                      onClick={handleLogout}
+                      onClick={() => setIsLogoutOpen(true)}
                       className="bg-transparent w-full hover:bg-error/10 flex items-center gap-3 text-error px-3 py-1.5 border-l-3 border-base-content/0 rounded-lg transition cursor-pointer"
                     >
                       <img
@@ -406,6 +402,8 @@ const Navbar = () => {
           </motion.div>
         )}
       </AnimatePresence>
+
+      <Outlet />
 
       {/* Modal Components */}
       <LoginModal
@@ -437,6 +435,11 @@ const Navbar = () => {
           setIsForgetPasswordOpen(false);
           setIsLoginOpen(true);
         }}
+      />
+
+      <LogoutModal
+        isOpen={isLogoutOpen}
+        onClose={() => setIsLogoutOpen(false)}
       />
 
       <ProfileModal

@@ -57,10 +57,10 @@ const LoginModal = ({
 
   const onSubmit = async (data: TipeForm) => {
     const sukses = await login(data);
-    if (sukses) {
-      onClose();
-      reset();
-    }
+    if (!sukses) return;
+
+    onClose();
+    reset();
   };
 
   if (!isOpen) return null;

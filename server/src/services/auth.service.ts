@@ -31,7 +31,7 @@ export type HasilLogin = {
   };
 };
 
-// Daftar atau buat akun baru
+// Daftar atau buat akun baru (Klien Only)
 export const registrasiPengguna = async (data: {
   email: string;
   kataSandi: string;
@@ -308,6 +308,103 @@ export const buatUlangPassword = async (
   }
 };
 
+// Cek apakah Owner sudah ada (System Only)
+export const cekOwner = async () => {
+  try {
+    const owner = await prisma.pengguna.findFirst({
+      where: { peran: "PEMILIK" },
+      select: { id: true, email: true, namaLengkap: true },
+    });
+
+    return {
+      sukses: true,
+      data: owner,
+      exists: !!owner,
+    };
+  } catch (error) {
+    console.error("Cek Owner error:", error);
+    return {
+      sukses: false,
+      pesan: "Terjadi kesalahan pada server.",
+    };
+  }
+};
+
+// Buat Owner pertama (System Only)
+export const buatOwnerPertama = async (data: {
+  email: string;
+  kataSandi: string;
+  namaLengkap?: string;
+  nomorTelepon?: string;
+}) => {
+  try {
+    const ownerExist = await prisma.pengguna.findFirst({
+      where: { peran: "PEMILIK" },
+    });
+
+    if (ownerExist) {
+      return {
+        sukses: false,
+        pesan: "Owner sudah ada. Tidak bisa membuat Owner baru.",
+      };
+    }
+
+    const penggunaExist = await prisma.pengguna.findUnique({
+      where: { email: data.email },
+    });
+
+    if (penggunaExist) {
+      return {
+        sukses: false,
+        pesan: "Email sudah terdaftar. Gunakan email lain.",
+      };
+    }
+
+    const hashedPassword = await bcrypt.hash(data.kataSandi, 10);
+
+    const ownerBaru = await prisma.pengguna.create({
+      data: {
+        email: data.email,
+        kataSandi: hashedPassword,
+        namaLengkap: data.namaLengkap || null,
+        nomorTelepon: data.nomorTelepon || null,
+        peran: "PEMILIK",
+        statusAkun: "AKTIF",
+      },
+      select: {
+        id: true,
+        email: true,
+        namaLengkap: true,
+        peran: true,
+        statusAkun: true,
+        dibuatPada: true,
+      },
+    });
+
+    const payloadJWT: TipePayloadJWT = {
+      id: ownerBaru.id,
+      email: ownerBaru.email,
+      peran: ownerBaru.peran,
+    };
+    const token = buatToken(payloadJWT);
+
+    return {
+      sukses: true,
+      pesan: "Owner berhasil dibuat! Selamat datang di Nusa Residence.",
+      data: {
+        ...ownerBaru,
+        token,
+      },
+    };
+  } catch (error) {
+    console.error("Buat owner pertama error:", error);
+    return {
+      sukses: false,
+      pesan: "Terjadi kesalahan pada server.",
+    };
+  }
+};
+
 // Data dan informasi profil pengguna
 export const profilPengguna = async (userId: string) => {
   try {
@@ -378,6 +475,7 @@ export const updateProfilPengguna = async ({
         jenisKelamin: true,
         fotoProfil: true,
         peran: true,
+        statusAkun: true,
       },
     });
 
