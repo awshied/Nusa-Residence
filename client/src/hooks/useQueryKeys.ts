@@ -23,5 +23,13 @@ export const queryKeys = {
     lists: () => [...queryKeys.admin.all, "list"] as const,
     list: (filters: AdminFilter = {}) =>
       [...queryKeys.admin.lists(), { ...filters }] as const,
+    details: () => [...queryKeys.admin.all, "detail"] as const,
+    detail: (id: string) => [...queryKeys.admin.details(), id] as const,
+  },
+  auth: {
+    all: ["auth"] as const,
+    user: () => [...queryKeys.auth.all, "user"] as const,
   },
 } as const;
+
+export type { PropertiFilter, AdminFilter };

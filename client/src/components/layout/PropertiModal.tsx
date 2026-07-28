@@ -11,8 +11,9 @@ import {
   useCreateProperty,
   useEditProperty,
 } from "@/hooks/useProperti";
-import addNewPropertyIcon from "@/assets/icons/add-new-property.png";
 import DropzoneGambar from "../shared/DropzoneGambar";
+
+import addNewPropertyIcon from "@/assets/icons/add-new-property.png";
 
 const AMENITIES_LIST = [
   { value: "AIR_CONDITIONER", label: "Air Conditioner" },

@@ -3,10 +3,14 @@ import { Link, Outlet, useLocation } from "react-router-dom";
 import { ChevronDown, ChevronLeft, ChevronRight } from "lucide-react";
 
 import { useAuth } from "@/hooks/useAuth";
+import ProfileModal from "./ProfileModal";
+import OwnerNavbar from "./OwnerNavbar";
 
 import logoWeb from "@/assets/logo-web.png";
 import dashboardOutlineIcon from "@/assets/icons/dashboard-outline.png";
 import dashboardFillIcon from "@/assets/icons/dashboard-fill.png";
+import analyticOutlineIcon from "@/assets/icons/analytics-outline.png";
+import analyticFillIcon from "@/assets/icons/analytics-fill.png";
 import managementOutlineIcon from "@/assets/icons/management-outline.png";
 import managementFillIcon from "@/assets/icons/management-fill.png";
 import adminManagementOutlineIcon from "@/assets/icons/admin-management-outline.png";
@@ -16,8 +20,6 @@ import propertyManagementFillIcon from "@/assets/icons/property-management-fill.
 import reportOutlineIcon from "@/assets/icons/report-outline.png";
 import reportFillIcon from "@/assets/icons/report-fill.png";
 import emptyProfile from "@/assets/empty-profile.png";
-import ProfileModal from "./ProfileModal";
-import OwnerNavbar from "./OwnerNavbar";
 
 interface NavigationPath {
   path?: string;
@@ -38,6 +40,12 @@ const MenuItem: NavigationPath[] = [
     label: "Dashboard",
     iconOutline: dashboardOutlineIcon,
     iconFill: dashboardFillIcon,
+  },
+  {
+    path: "/owner/analitik",
+    label: "Analitik",
+    iconOutline: analyticOutlineIcon,
+    iconFill: analyticFillIcon,
   },
   {
     label: "Kelola",
@@ -100,7 +108,7 @@ const OwnerSidebar = ({ isOpen, setIsOpen }: Props) => {
   return (
     <>
       <aside
-        className={`fixed left-0 top-0 h-full bg-base-100 transition-all duration-300 z-40 flex flex-col shadow-lg ${
+        className={`fixed left-0 top-0 h-full bg-base-100 transition-all duration-300 z-40 hidden lg:flex flex-col shadow-lg ${
           isOpen ? "w-64" : "w-20"
         }`}
       >
@@ -297,7 +305,7 @@ const OwnerSidebar = ({ isOpen, setIsOpen }: Props) => {
       </aside>
 
       <div
-        className={`transition-all duration-300 px-6 py-3 ${isOpen ? "ml-64" : "ml-20"}`}
+        className={`transition-all duration-300 p-0 lg:px-6 lg:py-3 ${isOpen ? "lg:ml-64" : "lg:ml-20"} ml-0`}
       >
         <OwnerNavbar />
         <main className="mt-3">

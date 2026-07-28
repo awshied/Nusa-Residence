@@ -48,7 +48,7 @@ export const skemaBuatOwner = z.object({
     .regex(/[A-Z]/, "Password harus mengandung huruf besar.")
     .regex(/[a-z]/, "Password harus mengandung huruf kecil.")
     .regex(/[0-9]/, "Password harus mengandung angka."),
-  namaLengkap: z.string().min(4, "Nama lengkap minimal 3 karakter.").optional(),
+  namaLengkap: z.string().min(4, "Nama lengkap minimal 4 karakter.").optional(),
   nomorTelepon: z
     .string()
     .regex(/^[0-9+]{10,15}$/, "Nomor telepon tidak valid.")

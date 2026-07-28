@@ -1,13 +1,11 @@
-import { useEffect, useState } from "react";
+import { useEffect } from "react";
 import { AnimatePresence, motion } from "framer-motion";
 import { Controller, useForm } from "react-hook-form";
-import { toast } from "sonner";
 import { X } from "lucide-react";
 import z from "zod";
 
-import type { TipeAdmin } from "@/types";
 import { zodResolver } from "@hookform/resolvers/zod";
-import { buatAdmin } from "@/services/admin.service";
+import { useCreateNewAdmin } from "@/hooks/useAdmin";
 import FloatingInput from "./FloatingInput";
 
 import addNewAdminIcon from "@/assets/icons/add-new-admin.png";
@@ -50,8 +48,7 @@ interface Props {
 }
 
 const AdminBaruModal = ({ isOpen, onClose }: Props) => {
-  const [adminList, setAdminList] = useState<TipeAdmin[]>([]);
-  const [isSubmitting, setIsSubmitting] = useState(false);
+  const buatAdmin = useCreateNewAdmin();
 
   const {
     control,
@@ -75,28 +72,9 @@ const AdminBaruModal = ({ isOpen, onClose }: Props) => {
   }, [isOpen, reset]);
 
   const onSubmit = async (data: TipeForm) => {
-    setIsSubmitting(true);
-    try {
-      const response = await buatAdmin(data);
-      if (response.sukses && response.data) {
-        toast.success(
-          response.pesan || "Anda baru saja menambahkan Admin baru.",
-        );
-        setAdminList([response.data, ...adminList]);
-        onClose();
-        reset();
-      } else {
-        toast.error(response.pesan || "Gagal menambahkan Admin baru.");
-      }
-    } catch (error) {
-      toast.error(
-        "Sistem telah mengalami gangguan sementara, mohon untuk mencobanya sekali lagi dalam beberapa waktu ke depan.",
-      );
-      console.error(error);
-    } finally {
-      setIsSubmitting(false);
-      onClose();
-    }
+    await buatAdmin.mutateAsync(data);
+    reset();
+    onClose();
   };
 
   if (!isOpen) return null;
@@ -254,9 +232,9 @@ const AdminBaruModal = ({ isOpen, onClose }: Props) => {
                 <button
                   type="submit"
                   className="btn bg-base-content py-6 font-poppins hover:bg-neutral w-full rounded-lg text-base-100 font-semibold"
-                  disabled={isSubmitting}
+                  disabled={buatAdmin.isPending}
                 >
-                  {isSubmitting ? (
+                  {buatAdmin.isPending ? (
                     <span className="loading loading-bars" />
                   ) : (
                     "Tambah"

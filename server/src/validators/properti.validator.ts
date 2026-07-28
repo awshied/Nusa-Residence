@@ -25,7 +25,7 @@ export const skemaBuatProperti = z.object({
     .optional(),
   deskripsi: z.string().optional(),
   amenities: z.array(z.nativeEnum(Amenities)).default([]),
-  adminId: z.string().uuid("ID Admin tidak valid."),
+  adminId: z.string().uuid("ID Admin tidak valid.").optional(),
 });
 
 export type TipeBuatProperti = z.infer<typeof skemaBuatProperti>;

@@ -1,14 +1,13 @@
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import { AnimatePresence, motion } from "framer-motion";
-import { toast } from "sonner";
 import { Plus, X } from "lucide-react";
 
 import type { JenisKelamin, TipeAdmin } from "@/types";
 import {
-  getAdminOwner,
-  pecatAdmin,
-  updateStatusAdmin,
-} from "@/services/admin.service";
+  useAdminFired,
+  useAdminManagement,
+  useUpdateStatusAdmin,
+} from "@/hooks/useAdmin";
 import { formatTanggal } from "@/lib/formatTanggal";
 
 import Loading from "@/components/layout/Loading";
@@ -18,11 +17,7 @@ import emptyAdmin from "@/assets/empty-admin.png";
 import emptyProfile from "@/assets/empty-profile.png";
 
 const ManajemenAdmin = () => {
-  const [adminList, setAdminList] = useState<TipeAdmin[]>([]);
-  const [isLoading, setIsLoading] = useState(true);
   const [isNewAdminOpen, setIsNewAdminOpen] = useState(false);
-  const [isDeleting, setIsDeleting] = useState(false);
-  const [isUpdatingStatus, setIsUpdatingStatus] = useState(false);
   const [showDeleteModal, setShowDeleteModal] = useState(false);
   const [showProfileModal, setShowProfileModal] = useState(false);
   const [selectedAdmin, setSelectedAdmin] = useState<TipeAdmin | null>(null);
@@ -30,77 +25,25 @@ const ManajemenAdmin = () => {
     "AKTIF" | "NONAKTIF" | "DIBLOKIR"
   >("AKTIF");
 
-  const loadAdmin = async () => {
-    setIsLoading(true);
-    try {
-      const response = await getAdminOwner();
-
-      if (response.sukses && response.data) {
-        setAdminList(response.data);
-      } else {
-        toast.error(response.pesan || "Gagal memuat data Admin.");
-      }
-    } catch (error) {
-      toast.error("Terjadi kesalahan saat memuat data Admin.");
-      console.error(error);
-    } finally {
-      setIsLoading(false);
-    }
-  };
-
-  useEffect(() => {
-    loadAdmin();
-  }, []);
+  const { data: adminList = [], isLoading } = useAdminManagement();
+  const updateStatus = useUpdateStatusAdmin();
+  const hapusAdmin = useAdminFired();
 
   const handleDelete = async () => {
     if (!selectedAdmin) return;
-
-    setIsDeleting(true);
-    try {
-      const response = await pecatAdmin(selectedAdmin.id);
-      if (response.sukses) {
-        toast.success(response.pesan || "Admin baru saja dipecat.");
-        setAdminList(adminList.filter((a) => a.id !== selectedAdmin.id));
-        setShowDeleteModal(false);
-        setSelectedAdmin(null);
-      } else {
-        toast.error(response.pesan || "Gagal memecat Admin.");
-      }
-    } catch (error) {
-      toast.error("Terjadi kesalahan saat memecat Admin.");
-      console.error(error);
-    } finally {
-      setIsDeleting(false);
-    }
+    await hapusAdmin.mutateAsync(selectedAdmin.id);
+    setShowDeleteModal(false);
+    setSelectedAdmin(null);
   };
 
   const handleUpdateStatus = async () => {
     if (!selectedAdmin) return;
-
-    setIsUpdatingStatus(true);
-    try {
-      const response = await updateStatusAdmin(
-        selectedAdmin.id,
-        selectedStatus,
-      );
-      if (response.sukses && response.data) {
-        toast.success(response.pesan || "Status Admin berhasil diperbarui.");
-        setAdminList(
-          adminList.map((a) =>
-            a.id === selectedAdmin.id ? response.data! : a,
-          ),
-        );
-        setShowProfileModal(false);
-      } else {
-        toast.error(response.pesan || "Gagal mengubah status Admin.");
-      }
-    } catch (error) {
-      toast.error("Terjadi kesalahan saat mengubah status.");
-      console.error(error);
-    } finally {
-      setIsUpdatingStatus(false);
-      setShowProfileModal(false);
-    }
+    await updateStatus.mutateAsync({
+      id: selectedAdmin.id,
+      status: selectedStatus,
+    });
+    setShowProfileModal(false);
+    setSelectedAdmin(null);
   };
 
   const getStatusBadge = (status: string) => {
@@ -290,9 +233,14 @@ const ManajemenAdmin = () => {
                     <td>
                       <div className="flex items-center justify-center">
                         {admin.propertiDikelola ? (
-                          <span className="badge badge-primary">
-                            {admin.propertiDikelola.nama}
-                          </span>
+                          <div className="flex flex-col items-center justify-center gap-1">
+                            <span className="font-bold text-base text-base-content">
+                              {admin.propertiDikelola.nama}
+                            </span>
+                            <span className="font-semibold text-sm text-base-content/60">
+                              {admin.nomorTelepon}
+                            </span>
+                          </div>
                         ) : (
                           <span className="py-1.5 px-3 text-center border-2 border-info bg-info/10 text-info font-semibold rounded-full">
                             Tersedia
@@ -452,15 +400,6 @@ const ManajemenAdmin = () => {
                       </select>
                     </div>
                   </div>
-                  {selectedAdmin.propertiDikelola && (
-                    <div className="flex items-center gap-2 border border-warning bg-warning/10 w-full mt-4">
-                      <div className="w-1 h-1 rounded-full bg-warning" />
-                      <span className="text-[10px] font-medium text-warning">
-                        Anda tidak dapat mengubah status Admin yang tengah sibuk
-                        mengelola properti terkait.
-                      </span>
-                    </div>
-                  )}
 
                   <div className="flex gap-3 mt-3 pt-4 border-t border-base-content/20">
                     <button
@@ -485,10 +424,11 @@ const ManajemenAdmin = () => {
                       className="flex-1 btn border border-neutral/0 bg-neutral text-base-100 rounded-lg font-semibold font-mona hover:bg-base-content"
                       onClick={handleUpdateStatus}
                       disabled={
-                        isUpdatingStatus || !!selectedAdmin.propertiDikelola
+                        updateStatus.isPending ||
+                        !!selectedAdmin.propertiDikelola
                       }
                     >
-                      {isUpdatingStatus ? (
+                      {updateStatus.isPending ? (
                         <span className="loading loading-bars" />
                       ) : (
                         "Simpan"
@@ -524,15 +464,16 @@ const ManajemenAdmin = () => {
                 <button
                   className="btn rounded-lg font-semibold"
                   onClick={() => setShowDeleteModal(false)}
+                  disabled={hapusAdmin.isPending}
                 >
                   Batal
                 </button>
                 <button
                   className="btn btn-error rounded-lg font-semibold text-base-100"
                   onClick={handleDelete}
-                  disabled={isDeleting}
+                  disabled={hapusAdmin.isPending}
                 >
-                  {isDeleting ? (
+                  {hapusAdmin.isPending ? (
                     <span className="loading loading-bars text-base-content" />
                   ) : (
                     "Hapus"
