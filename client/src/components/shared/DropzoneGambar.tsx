@@ -1,4 +1,4 @@
-import { useState, useCallback } from "react";
+import { useState, useCallback, useEffect, useRef } from "react";
 import { useDropzone } from "react-dropzone";
 
 interface Props {
@@ -11,10 +11,21 @@ interface Props {
 const DropzoneGambar = ({
   files,
   setFiles,
-  maxFiles = 10,
+  maxFiles = 5,
   maxSize = 5 * 1024 * 1024,
 }: Props) => {
   const [previews, setPreviews] = useState<string[]>([]);
+  const previewsRef = useRef<string[]>([]);
+
+  useEffect(() => {
+    previewsRef.current = previews;
+  }, [previews]);
+
+  useEffect(() => {
+    return () => {
+      previewsRef.current.forEach((preview) => URL.revokeObjectURL(preview));
+    };
+  }, []);
 
   const onDrop = useCallback(
     (acceptedFiles: File[]) => {
@@ -37,7 +48,6 @@ const DropzoneGambar = ({
       const newFiles = [...files, ...filesToAdd];
       setFiles(newFiles);
 
-      // Buat preview
       const newPreviews = filesToAdd.map((file) => URL.createObjectURL(file));
       setPreviews((prev) => [...prev, ...newPreviews]);
     },

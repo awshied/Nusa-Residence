@@ -5,7 +5,7 @@ import { useForm } from "react-hook-form";
 import { X } from "lucide-react";
 
 import { zodResolver } from "@hookform/resolvers/zod";
-import type { KategoriProperti, TipeProperti } from "@/types";
+import type { Amenities, KategoriProperti, TipeProperti } from "@/types";
 import {
   useAdminAvailable,
   useCreateProperty,
@@ -15,7 +15,7 @@ import DropzoneGambar from "../shared/DropzoneGambar";
 
 import addNewPropertyIcon from "@/assets/icons/add-new-property.png";
 
-const AMENITIES_LIST = [
+const AMENITIES_LIST: { value: Amenities; label: string }[] = [
   { value: "AIR_CONDITIONER", label: "Air Conditioner" },
   { value: "TELEVISI", label: "Televisi" },
   { value: "WIFI", label: "Wifi" },
@@ -47,6 +47,14 @@ const AMENITIES_LIST = [
   { value: "KAMAR_MANDI_LUAR", label: "Kamar Mandi Luar" },
 ];
 
+const isValidAmenity = (value: string): value is Amenities => {
+  return AMENITIES_LIST.some((item) => item.value === value);
+};
+
+const filterValidAmenities = (values: string[]): Amenities[] => {
+  return values.filter(isValidAmenity);
+};
+
 const KATEGORI_PROPERTI: { value: KategoriProperti; label: string }[] = [
   { value: "HOTEL", label: "Hotel" },
   { value: "VILLA", label: "Villa" },
@@ -68,18 +76,47 @@ const skemaTambahProperti = z.object({
   latitude: z.number().min(-90).max(90),
   longitude: z.number().min(-180).max(180),
 
-  nomorTelepon: z
-    .string()
-    .min(9, "Nomor telepon minimal 9 karakter.")
-    .max(15, "Nomor telepon maksimal 15 karakter.")
-    .regex(/^[0-9+]{10,15}$/, "Nomor telepon tidak valid.")
-    .optional(),
   luasBangunan: z
     .number()
     .positive("Luas bangunan tidak boleh negatif.")
     .optional(),
   deskripsi: z.string().optional(),
-  amenities: z.array(z.string()).default([]),
+  amenities: z
+    .array(
+      z.enum([
+        "AIR_CONDITIONER",
+        "TELEVISI",
+        "WIFI",
+        "KOLAM_RENANG",
+        "PARKIR",
+        "BATHUB",
+        "RESTORAN",
+        "GYM",
+        "SPA",
+        "MUSHOLA",
+        "MINI_BAR",
+        "KITCHENETTE",
+        "MESIN_CUCI",
+        "KIPAS_ANGIN",
+        "AIR_PANAS",
+        "BREAKFAST",
+        "ROOM_SERVICE",
+        "RESEPSIONIS_24JAM",
+        "KEAMANAN_24JAM",
+        "AREA_BERMAIN_ANAK",
+        "TAMAN",
+        "BALKON",
+        "DAPUR_UMUM",
+        "RUANG_TAMU",
+        "AIR_ISI_ULANG",
+        "LISTRIK",
+        "GAS_ALAM",
+        "KAMAR_MANDI_DALAM",
+        "KAMAR_MANDI_LUAR",
+      ]),
+    )
+    .default([])
+    .transform((val) => filterValidAmenities(val)),
   adminId: z.string().uuid("Tentukan Admin yang tersedia."),
 });
 
@@ -128,6 +165,7 @@ const PropertiModal = ({ isOpen, onClose, properti }: Props) => {
 
   useEffect(() => {
     if (isEditMode && properti) {
+      const validAmenities = filterValidAmenities(properti.amenities || []);
       reset({
         nama: properti.nama,
         kategori: properti.kategori,
@@ -139,10 +177,9 @@ const PropertiModal = ({ isOpen, onClose, properti }: Props) => {
         kodePos: properti.kodePos || "",
         latitude: properti.latitude,
         longitude: properti.longitude,
-        nomorTelepon: properti.nomorTelepon || "",
         luasBangunan: properti.luasBangunan || undefined,
         deskripsi: properti.deskripsi || "",
-        amenities: properti.amenities || [],
+        amenities: validAmenities,
         adminId: properti.admin?.id || "",
       });
     } else {
@@ -157,8 +194,18 @@ const PropertiModal = ({ isOpen, onClose, properti }: Props) => {
     }
   }, [properti, isEditMode, reset]);
 
-  const toggleAmenity = (amenity: string) => {
+  const toggleAmenity = (amenityValue: string) => {
     const current = selectedAmenities;
+
+    if (!isValidAmenity(amenityValue)) {
+      console.warn(
+        `Fasilitas "${amenityValue}" tidak valid dan akan diabaikan.`,
+      );
+      return;
+    }
+
+    const amenity = amenityValue as Amenities;
+
     if (current.includes(amenity)) {
       setValue(
         "amenities",
@@ -170,9 +217,23 @@ const PropertiModal = ({ isOpen, onClose, properti }: Props) => {
   };
 
   const onSubmit = async (data: TipeForm) => {
+    const validAmenities = filterValidAmenities(data.amenities || []);
+
     const payload = {
-      ...data,
-      amenities: data.amenities ?? [],
+      nama: data.nama,
+      kategori: data.kategori,
+      namaJalan: data.namaJalan,
+      kelurahan: data.kelurahan,
+      kecamatan: data.kecamatan,
+      kabupatenKota: data.kabupatenKota,
+      provinsi: data.provinsi,
+      kodePos: data.kodePos,
+      latitude: data.latitude,
+      longitude: data.longitude,
+      luasBangunan: data.luasBangunan,
+      deskripsi: data.deskripsi,
+      amenities: validAmenities,
+      adminId: data.adminId,
       gambar: gambarFiles,
     };
 
@@ -190,10 +251,9 @@ const PropertiModal = ({ isOpen, onClose, properti }: Props) => {
           kodePos: data.kodePos,
           latitude: data.latitude,
           longitude: data.longitude,
-          nomorTelepon: data.nomorTelepon,
           luasBangunan: data.luasBangunan,
           deskripsi: data.deskripsi,
-          amenities: data.amenities,
+          amenities: validAmenities,
         },
       });
       onClose();
@@ -253,7 +313,7 @@ const PropertiModal = ({ isOpen, onClose, properti }: Props) => {
               className="flex flex-col flex-1 overflow-hidden"
             >
               <div className="flex-1 overflow-y-auto px-6 py-6 space-y-6">
-                {/* Informasi Properti */}
+                {/* Informasi Properti - sama seperti sebelumnya */}
                 <div className="card bg-base-100 shadow-sm border">
                   <div className="card-body space-y-4">
                     <h4 className="font-semibold text-base">
@@ -497,20 +557,6 @@ const PropertiModal = ({ isOpen, onClose, properti }: Props) => {
                         <div className="form-control">
                           <label className="label">
                             <span className="label-text font-medium">
-                              Nomor Telepon
-                            </span>
-                          </label>
-                          <input
-                            type="tel"
-                            placeholder="08123456789"
-                            className="input input-bordered w-full"
-                            {...register("nomorTelepon")}
-                            disabled={isSubmitting}
-                          />
-                        </div>
-                        <div className="form-control">
-                          <label className="label">
-                            <span className="label-text font-medium">
                               Luas Bangunan (m²)
                             </span>
                           </label>
@@ -702,7 +748,10 @@ const PropertiModal = ({ isOpen, onClose, properti }: Props) => {
                     <DropzoneGambar
                       files={gambarFiles}
                       setFiles={setGambarFiles}
-                      maxFiles={10 - (properti?.gambar?.length || 0)}
+                      maxFiles={Math.min(
+                        5,
+                        Math.max(0, 5 - (properti?.gambar?.length || 0)),
+                      )}
                     />
 
                     {gambarFiles.length > 0 && (

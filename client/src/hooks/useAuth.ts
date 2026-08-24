@@ -39,6 +39,8 @@ export const useAuth = () => {
             id: response.data.id,
             email: response.data.email,
             namaLengkap: response.data.namaLengkap,
+            nomorTelepon: response.data.nomorTelepon || null,
+            jenisKelamin: response.data.jenisKelamin,
             fotoProfil: response.data.fotoProfil || null,
             peran: response.data.peran,
           }),
@@ -153,7 +155,7 @@ export const useAuth = () => {
   const handleLogout = () => {
     logout();
     dispatch(setLogout());
-    toast.info("Anda telah keluar dari akun.");
+    toast.success("Anda telah keluar dari akun.");
     navigate("/");
   };
 
@@ -184,13 +186,17 @@ export const useAuth = () => {
           localStorage.setItem(
             "user",
             JSON.stringify({
-              ...currentUser,
-              ...response.data,
+              id: response.data.id,
+              email: response.data.email,
+              namaLengkap: response.data.namaLengkap,
+              nomorTelepon: response.data.nomorTelepon || null,
+              jenisKelamin: response.data.jenisKelamin,
+              fotoProfil: response.data.fotoProfil || null,
+              peran: response.data.peran,
             }),
           );
         }
 
-        toast.success("Profil berhasil diperbarui");
         return true;
       } else {
         toast.error(response.pesan);

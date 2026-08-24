@@ -177,13 +177,13 @@ const Navbar = () => {
                     <img
                       src={user.fotoProfil}
                       alt={user.namaLengkap || user.email}
-                      className="w-8 md:w-10 h-auto rounded-full object-cover"
+                      className="w-8 md:w-10 h-8 md:h-10 rounded-full object-cover"
                     />
                   ) : (
                     <img
                       src={emptyProfile}
                       alt="user profile"
-                      className="w-8 md:w-10 h-auto rounded-full"
+                      className="w-8 md:w-10 h-8 md:h-10 rounded-full object-cover"
                     />
                   )}
 

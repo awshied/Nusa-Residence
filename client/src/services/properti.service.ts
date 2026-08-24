@@ -34,29 +34,49 @@ export const getAdminTersedia = async (): Promise<{
 export const tambahProperti = async (
   data: DataBuatProperti,
 ): Promise<{ sukses: boolean; data?: TipeProperti; pesan?: string }> => {
-  let gambarUrls: string[] = [];
+  const formData = new FormData();
+
+  formData.append("nama", data.nama);
+  formData.append("kategori", data.kategori);
+  formData.append("namaJalan", data.namaJalan);
+  formData.append("kelurahan", data.kelurahan);
+  formData.append("kecamatan", data.kecamatan);
+  formData.append("kabupatenKota", data.kabupatenKota);
+  formData.append("provinsi", data.provinsi);
+  formData.append("latitude", String(data.latitude));
+  formData.append("longitude", String(data.longitude));
+  formData.append("adminId", data.adminId);
+
+  if (data.kodePos) formData.append("kodePos", data.kodePos);
+  if (data.luasBangunan)
+    formData.append("luasBangunan", String(data.luasBangunan));
+  if (data.deskripsi) formData.append("deskripsi", data.deskripsi);
+
+  if (data.amenities && data.amenities.length > 0) {
+    formData.append("amenities", JSON.stringify(data.amenities));
+  }
 
   if (data.gambar && data.gambar.length > 0) {
-    const formData = new FormData();
-    data.gambar.forEach((file) => {
+    data.gambar.forEach((file: File) => {
       formData.append("gambar", file);
     });
+  }
 
-    const uploadResponse = await api.post("/properti/upload", formData, {
-      headers: {
-        "Content-Type": "multipart/form-data",
-      },
-    });
-
-    if (uploadResponse.data.sukses) {
-      gambarUrls = uploadResponse.data.data.map((img: any) => img.url);
+  console.log("📤 FormData yang dikirim:");
+  for (const [key, value] of formData.entries()) {
+    if (key === "gambar") {
+      console.log(`  ${key}: [File] ${(value as File).name}`);
+    } else {
+      console.log(`  ${key}: ${value}`);
     }
   }
 
-  const response = await api.post("/properti", {
-    ...data,
-    gambarUrls,
+  const response = await api.post("/properti", formData, {
+    headers: {
+      "Content-Type": "multipart/form-data",
+    },
   });
+
   return response.data;
 };
 
@@ -98,9 +118,34 @@ export const setGambarUtama = async (
 
 export const ubahProperti = async (
   id: string,
-  data: Partial<Omit<DataBuatProperti, "adminId">>,
+  data: Partial<Omit<DataBuatProperti, "adminId" | "gambar">>,
 ): Promise<{ sukses: boolean; data?: TipeProperti; pesan?: string }> => {
-  const response = await api.put(`/properti/${id}`, data);
+  const payload: Record<string, any> = {};
+
+  const fields: (keyof typeof data)[] = [
+    "nama",
+    "kategori",
+    "namaJalan",
+    "kelurahan",
+    "kecamatan",
+    "kabupatenKota",
+    "provinsi",
+    "kodePos",
+    "luasBangunan",
+    "deskripsi",
+    "latitude",
+    "longitude",
+    "amenities",
+  ];
+
+  fields.forEach((key) => {
+    const value = data[key];
+    if (value !== undefined && value !== null) {
+      payload[key] = value;
+    }
+  });
+
+  const response = await api.put(`/properti/${id}`, payload);
   return response.data;
 };
 

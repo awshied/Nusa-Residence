@@ -113,7 +113,6 @@ model properti {
   latitude             Float                @map("latitude")
   longitude            Float                @map("longitude")
   lokasi               String?              @map("lokasi")
-  nomorTelepon         String?              @map("nomor_telepon")
   luasBangunan         Float?               @map("luas_bangunan")
   deskripsi            String?              @db.Text
   amenities            Amenities[]          @default([])

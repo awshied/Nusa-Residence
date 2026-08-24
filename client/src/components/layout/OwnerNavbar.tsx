@@ -1,16 +1,17 @@
 import { useEffect, useRef, useState } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
-import { ChevronDown, Menu, Search, X } from "lucide-react";
+import { Search, X } from "lucide-react";
 
-import { useAuth } from "@/hooks/useAuth";
+// import { useAuth } from "@/hooks/useAuth";
 import LogoutModal from "./LogoutModal";
 import ProfileModal from "./ProfileModal";
 
-import emptyProfile from "@/assets/empty-profile.png";
+// import emptyProfile from "@/assets/empty-profile.png";
+import logoWeb from "@/assets/logo-web.png";
 import dashboardOutlineIcon from "@/assets/icons/dashboard-outline.png";
 import dashboardFillIcon from "@/assets/icons/dashboard-fill.png";
-import analyticOutlineIcon from "@/assets/icons/analytics-outline.png";
-import analyticFillIcon from "@/assets/icons/analytics-fill.png";
+// import analyticOutlineIcon from "@/assets/icons/analytics-outline.png";
+// import analyticFillIcon from "@/assets/icons/analytics-fill.png";
 import managementOutlineIcon from "@/assets/icons/management-outline.png";
 import managementFillIcon from "@/assets/icons/management-fill.png";
 import adminManagementOutlineIcon from "@/assets/icons/admin-management-outline.png";
@@ -19,7 +20,6 @@ import propertyManagementOutlineIcon from "@/assets/icons/property-management-ou
 import propertyManagementFillIcon from "@/assets/icons/property-management-fill.png";
 import reportOutlineIcon from "@/assets/icons/report-outline.png";
 import reportFillIcon from "@/assets/icons/report-fill.png";
-import inboxIcon from "@/assets/icons/inbox.png";
 import notificationIcon from "@/assets/icons/notification-bell.png";
 import logoutIcon from "@/assets/icons/out.png";
 
@@ -37,15 +37,15 @@ interface SearchBarProps {
   placeholder?: string;
 }
 
-interface MobileMenuProps {
-  isOpen: boolean;
-  onClose: () => void;
-  currentPath: string;
-  onNavigate: (path: string) => void;
-  onLogout: () => void;
-  onInbox: () => void;
-  onNotification: () => void;
-}
+// interface MobileMenuProps {
+//   isOpen: boolean;
+//   onClose: () => void;
+//   currentPath: string;
+//   onNavigate: (path: string) => void;
+//   onLogout: () => void;
+//   onInbox: () => void;
+//   onNotification: () => void;
+// }
 
 const MenuItem: NavigationPath[] = [
   {
@@ -55,13 +55,13 @@ const MenuItem: NavigationPath[] = [
     iconFill: dashboardFillIcon,
     text: "Tinjau ringkasan visual mengenai kondisi sistem serta lonjakan lalu lintas",
   },
-  {
-    path: "/owner/analitik",
-    label: "Analitik",
-    iconOutline: analyticOutlineIcon,
-    iconFill: analyticFillIcon,
-    text: "Analisis mendalam terkait pola perilaku pengguna dan memprediksi tren kebutuhan pada bulan-bulan berikutnya",
-  },
+  // {
+  //   path: "/owner/analitik",
+  //   label: "Analitik",
+  //   iconOutline: analyticOutlineIcon,
+  //   iconFill: analyticFillIcon,
+  //   text: "Analisis mendalam terkait pola perilaku pengguna dan memprediksi tren kebutuhan pada bulan-bulan berikutnya",
+  // },
   {
     label: "Kelola",
     iconOutline: managementOutlineIcon,
@@ -94,227 +94,228 @@ const MenuItem: NavigationPath[] = [
 ];
 
 // Komponen menu untuk mobile
-const MobileMenu = ({
-  isOpen,
-  onClose,
-  currentPath,
-  onNavigate,
-  onLogout,
-  onInbox,
-  onNotification,
-}: MobileMenuProps) => {
-  const [expandedItems, setExpandedItems] = useState<string[]>([]);
+// const MobileMenu = ({
+//   isOpen,
+//   onClose,
+//   currentPath,
+//   onNavigate,
+//   onLogout,
+//   onInbox,
+//   onNotification,
+// }: MobileMenuProps) => {
+//   const [expandedItems, setExpandedItems] = useState<string[]>([]);
 
-  const toggleExpand = (label: string) => {
-    setExpandedItems((prev) =>
-      prev.includes(label)
-        ? prev.filter((item) => item !== label)
-        : [...prev, label],
-    );
-  };
+//   const toggleExpand = (label: string) => {
+//     setExpandedItems((prev) =>
+//       prev.includes(label)
+//         ? prev.filter((item) => item !== label)
+//         : [...prev, label],
+//     );
+//   };
 
-  const handleNavigation = (path?: string) => {
-    if (path) {
-      onNavigate(path);
-      onClose();
-    }
-  };
+//   const handleNavigation = (path?: string) => {
+//     if (path) {
+//       onNavigate(path);
+//       onClose();
+//     }
+//   };
 
-  return (
-    <>
-      <div
-        className={`fixed inset-0 bg-black/40 z-40 backdrop-blur-sm transition-opacity duration-300 ${
-          isOpen ? "opacity-100" : "opacity-0 pointer-events-none"
-        }`}
-        onClick={onClose}
-      />
+//   return (
+//     <>
+//       <div
+//         className={`fixed inset-0 bg-black/40 z-70 backdrop-blur-sm transition-opacity duration-300 ${
+//           isOpen ? "opacity-100" : "opacity-0 pointer-events-none"
+//         }`}
+//         onClick={onClose}
+//       />
 
-      <div
-        className={`fixed top-0 left-0 bg-base-100 h-full w-full max-w-md z-50 transform transition-transform duration-300 ease-out ${
-          isOpen ? "translate-x-0" : "-translate-x-full"
-        }`}
-      >
-        <div className="flex flex-col h-full">
-          <div className="flex items-center justify-between px-4 py-2 border-b border-base-300">
-            <h2 className="text-xl font-bold text-base-content">
-              Pilih Halaman
-            </h2>
-            <button onClick={onClose} className="btn btn-ghost btn-square">
-              <X size={24} />
-            </button>
-          </div>
+//       <div
+//         className={`fixed top-0 left-0 bg-base-100 h-full w-full max-w-md z-80 transform transition-transform duration-300 ease-out ${
+//           isOpen ? "translate-x-0" : "-translate-x-full"
+//         }`}
+//       >
+//         <div className="flex flex-col h-full">
+//           <div className="flex items-center justify-between px-4 py-2 border-b border-base-300">
+//             <h2 className="text-xl font-bold text-base-content">
+//               Pilih Halaman
+//             </h2>
+//             <button onClick={onClose} className="btn btn-ghost btn-square">
+//               <X size={24} />
+//             </button>
+//           </div>
 
-          {/* Menu Items */}
-          <div className="flex-1 overflow-y-auto p-4">
-            {MenuItem.map((item, index) => {
-              const isActive =
-                currentPath === item.path ||
-                item.children?.some((child) => child.path === currentPath);
-              const isExpanded = expandedItems.includes(item.label);
+//           {/* Menu Items */}
+//           <div className="flex-1 overflow-y-auto p-4">
+//             {MenuItem.map((item, index) => {
+//               const isActive =
+//                 currentPath === item.path ||
+//                 item.children?.some((child) => child.path === currentPath);
+//               const isExpanded = expandedItems.includes(item.label);
 
-              return (
-                <div key={index} className="mb-2">
-                  <button
-                    onClick={() => {
-                      if (item.children) {
-                        toggleExpand(item.label);
-                      } else if (item.path) {
-                        handleNavigation(item.path);
-                      }
-                    }}
-                    className={`relative flex flex-col items-center justify-center w-full p-3 border-b-2 transition-all duration-300 cursor-pointer ${
-                      isActive
-                        ? "border-base-content opacity-100"
-                        : "border-secondary text-base-content opacity-70 hover:opacity-100"
-                    }`}
-                  >
-                    <img
-                      src={isActive ? item.iconFill : item.iconOutline}
-                      alt={item.label}
-                      className="w-8 h-8"
-                    />
-                    <span className="font-bold font-poppins text-base text-center mt-2">
-                      {item.label}
-                    </span>
-                    <p className="font-medium text-xs text-center">
-                      {item.text}
-                    </p>
-                    {item.children && (
-                      <div className="absolute right-0 top-0 flex items-center justify-center gap-2">
-                        <span className="text-xs font-medium">
-                          ({item.children.length}) Opsi Tersedia
-                        </span>
-                        <ChevronDown
-                          size={12}
-                          className={`transform transition-transform duration-300 ${
-                            isExpanded ? "rotate-180" : ""
-                          }`}
-                        />
-                      </div>
-                    )}
-                  </button>
+//               return (
+//                 <div key={index} className="mb-2">
+//                   <button
+//                     onClick={() => {
+//                       if (item.children) {
+//                         toggleExpand(item.label);
+//                       } else if (item.path) {
+//                         handleNavigation(item.path);
+//                       }
+//                     }}
+//                     className={`relative flex flex-col items-center justify-center w-full p-3 border-b-2 transition-all duration-300 cursor-pointer ${
+//                       isActive
+//                         ? "border-base-content opacity-100"
+//                         : "border-secondary text-base-content opacity-70 hover:opacity-100"
+//                     }`}
+//                   >
+//                     <img
+//                       src={isActive ? item.iconFill : item.iconOutline}
+//                       alt={item.label}
+//                       className="w-8 h-8"
+//                     />
+//                     <span className="font-bold font-poppins text-base text-center mt-2">
+//                       {item.label}
+//                     </span>
+//                     <p className="font-medium text-xs text-center">
+//                       {item.text}
+//                     </p>
+//                     {item.children && (
+//                       <div className="absolute right-0 top-0 flex items-center justify-center gap-2">
+//                         <span className="text-xs font-medium">
+//                           ({item.children.length}) Opsi Tersedia
+//                         </span>
+//                         <ChevronDown
+//                           size={12}
+//                           className={`transform transition-transform duration-300 ${
+//                             isExpanded ? "rotate-180" : ""
+//                           }`}
+//                         />
+//                       </div>
+//                     )}
+//                   </button>
 
-                  {item.children && (
-                    <div
-                      className="overflow-hidden transition-all duration-500 ease-in-out"
-                      style={{
-                        maxHeight: isExpanded
-                          ? `${item.children.length * 180}px`
-                          : "0px",
-                      }}
-                    >
-                      <div className="mt-2 space-y-1">
-                        {item.children.map((child, childIndex) => {
-                          const isChildActive = currentPath === child.path;
-                          return (
-                            <button
-                              key={childIndex}
-                              onClick={() => handleNavigation(child.path)}
-                              className={`flex flex-col items-center justify-center gap-2 w-full p-3 border-b-2 transition-all duration-300 cursor-pointer transform ${
-                                isChildActive
-                                  ? "border-base-content opacity-100"
-                                  : "border-secondary text-base-content opacity-70 hover:opacity-100"
-                              }`}
-                              style={{
-                                transform: isExpanded
-                                  ? "translateX(0)"
-                                  : "translateX(-20px)",
-                                opacity: isExpanded ? 1 : 0,
-                                transitionDelay: `${childIndex * 50}ms`,
-                              }}
-                            >
-                              <img
-                                src={
-                                  isChildActive
-                                    ? child.iconFill
-                                    : child.iconOutline
-                                }
-                                alt={child.label}
-                                className="w-8 h-8"
-                              />
-                              <span className="font-bold font-poppins text-base text-center mt-2">
-                                {child.label}
-                              </span>
-                              <p className="font-medium text-xs text-center">
-                                {child.text}
-                              </p>
-                            </button>
-                          );
-                        })}
-                      </div>
-                    </div>
-                  )}
-                </div>
-              );
-            })}
-          </div>
+//                   {item.children && (
+//                     <div
+//                       className="overflow-hidden transition-all duration-500 ease-in-out"
+//                       style={{
+//                         maxHeight: isExpanded
+//                           ? `${item.children.length * 180}px`
+//                           : "0px",
+//                       }}
+//                     >
+//                       <div className="mt-2 space-y-1">
+//                         {item.children.map((child, childIndex) => {
+//                           const isChildActive = currentPath === child.path;
+//                           return (
+//                             <button
+//                               key={childIndex}
+//                               onClick={() => handleNavigation(child.path)}
+//                               className={`flex flex-col items-center justify-center gap-2 w-full p-3 border-b-2 transition-all duration-300 cursor-pointer transform ${
+//                                 isChildActive
+//                                   ? "border-base-content opacity-100"
+//                                   : "border-secondary text-base-content opacity-70 hover:opacity-100"
+//                               }`}
+//                               style={{
+//                                 transform: isExpanded
+//                                   ? "translateX(0)"
+//                                   : "translateX(-20px)",
+//                                 opacity: isExpanded ? 1 : 0,
+//                                 transitionDelay: `${childIndex * 50}ms`,
+//                               }}
+//                             >
+//                               <img
+//                                 src={
+//                                   isChildActive
+//                                     ? child.iconFill
+//                                     : child.iconOutline
+//                                 }
+//                                 alt={child.label}
+//                                 className="w-8 h-8"
+//                               />
+//                               <span className="font-bold font-poppins text-base text-center mt-2">
+//                                 {child.label}
+//                               </span>
+//                               <p className="font-medium text-xs text-center">
+//                                 {child.text}
+//                               </p>
+//                             </button>
+//                           );
+//                         })}
+//                       </div>
+//                     </div>
+//                   )}
+//                 </div>
+//               );
+//             })}
+//           </div>
 
-          <div className="px-4 py-2">
-            <div className="flex items-center justify-center gap-10">
-              <button
-                onClick={() => {
-                  onInbox();
-                  onClose();
-                }}
-                className="flex flex-col items-center gap-1 group cursor-pointer"
-              >
-                <div className="relative rounded-full p-2 border border-base-content">
-                  <img src={inboxIcon} alt="inbox icon" className="w-6 h-6" />
-                </div>
-                <span className="text-xs font-medium text-base-content">
-                  Inbox
-                </span>
-              </button>
+//           <div className="px-4 py-2">
+//             <div className="flex items-center justify-center gap-10">
+//               <button
+//                 onClick={() => {
+//                   onInbox();
+//                   onClose();
+//                 }}
+//                 className="flex flex-col items-center gap-1 group cursor-pointer"
+//               >
+//                 <div className="relative rounded-full p-2 border border-base-content">
+//                   <img src={inboxIcon} alt="inbox icon" className="w-6 h-6" />
+//                 </div>
+//                 <span className="text-xs font-medium text-base-content">
+//                   Inbox
+//                 </span>
+//               </button>
 
-              <button
-                onClick={() => {
-                  onNotification();
-                  onClose();
-                }}
-                className="flex flex-col items-center gap-1 group cursor-pointer"
-              >
-                <div className="relative rounded-full p-2 border border-base-content">
-                  <img
-                    src={notificationIcon}
-                    alt="notification icon"
-                    className="w-6 h-6"
-                  />
-                </div>
-                <span className="text-xs font-medium text-base-content">
-                  Notifikasi
-                </span>
-              </button>
+//               <button
+//                 onClick={() => {
+//                   onNotification();
+//                   onClose();
+//                 }}
+//                 className="flex flex-col items-center gap-1 group cursor-pointer"
+//               >
+//                 <div className="relative rounded-full p-2 border border-base-content">
+//                   <img
+//                     src={notificationIcon}
+//                     alt="notification icon"
+//                     className="w-6 h-6"
+//                   />
+//                 </div>
+//                 <span className="text-xs font-medium text-base-content">
+//                   Notifikasi
+//                 </span>
+//               </button>
 
-              <button
-                onClick={() => {
-                  onLogout();
-                  onClose();
-                }}
-                className="flex flex-col items-center gap-1 group cursor-pointer"
-              >
-                <div className="relative rounded-full p-2 border border-base-content">
-                  <img src={logoutIcon} alt="logout icon" className="w-6 h-6" />
-                </div>
-                <span className="text-xs font-medium text-base-content">
-                  Logout
-                </span>
-              </button>
-            </div>
-          </div>
-        </div>
-      </div>
-    </>
-  );
-};
+//               <button
+//                 onClick={() => {
+//                   onLogout();
+//                   onClose();
+//                 }}
+//                 className="flex flex-col items-center gap-1 group cursor-pointer"
+//               >
+//                 <div className="relative rounded-full p-2 border border-base-content">
+//                   <img src={logoutIcon} alt="logout icon" className="w-6 h-6" />
+//                 </div>
+//                 <span className="text-xs font-medium text-base-content">
+//                   Logout
+//                 </span>
+//               </button>
+//             </div>
+//           </div>
+//         </div>
+//       </div>
+//     </>
+//   );
+// };
 
 // Navigation bar Owner
+
 const OwnerNavbar = ({
   onSearch,
   placeholder = "Cari Properti...",
 }: SearchBarProps) => {
   const location = useLocation();
   const navigate = useNavigate();
-  const { user } = useAuth();
+  // const { user } = useAuth();
 
   const inputRef = useRef<HTMLInputElement>(null);
   const containerRef = useRef<HTMLDivElement>(null);
@@ -322,16 +323,12 @@ const OwnerNavbar = ({
   const [query, setQuery] = useState<string>("");
   const [isFocused, setIsFocused] = useState<boolean>(false);
   const [isLogoutOpen, setIsLogoutOpen] = useState(false);
-  const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
+  // const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [isProfileOpen, setIsProfileOpen] = useState(false);
 
-  const handleNavigate = (path: string) => {
-    navigate(path);
-  };
-
-  const handleInbox = () => {
-    navigate("/owner/inbox");
-  };
+  // const handleNavigate = (path: string) => {
+  //   navigate(path);
+  // };
 
   const handleNotification = () => {
     navigate("/owner/notifikasi");
@@ -470,22 +467,26 @@ const OwnerNavbar = ({
 
   return (
     <>
-      <nav className="relative flex w-full items-center justify-between bg-base-100 lg:bg-transparent px-3 lg:px-6 min-h-12 lg:min-h-20">
-        {/* Menu Button */}
-        <div className="lg:hidden flex items-center">
-          <button
+      <nav className="sticky top-0 lg:relative flex w-full items-center z-50 justify-between bg-base-100 lg:bg-transparent px-3 lg:px-6 min-h-12 lg:min-h-20 shadow-sm lg:shadow-none">
+        {/* Page Label - Mobile */}
+        <div className="lg:hidden flex items-center shrink-0 gap-3">
+          {/* <button
             onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
             aria-label={isMobileMenuOpen ? "Tutup menu" : "Buka menu"}
             aria-expanded={isMobileMenuOpen}
-            className="btn btn-ghost btn-square"
+            className="p-2 cursor-pointer rounded-md hover:bg-base-300 shrink-0 flex items-center justify-center"
           >
-            {isMobileMenuOpen ? <X size={20} /> : <Menu size={20} />}
-          </button>
-        </div>
+            {isMobileMenuOpen ? <X size={24} /> : <Menu size={24} />}
+          </button> */}
 
-        {/* Page Label - Mobile */}
-        <div className="lg:hidden flex items-center">
-          <h3 className="text-lg font-bold text-base-content font-poppins">
+          <div className="w-8 h-8 flex items-center justify-center">
+            <img
+              src={logoWeb}
+              alt="logo web"
+              className="w-full h-full object-cover"
+            />
+          </div>
+          <h3 className="text-xl font-bold font-lobster text-base-content">
             {currentItem?.label || "Dashboard"}
           </h3>
         </div>
@@ -523,7 +524,7 @@ const OwnerNavbar = ({
           </div>
         </div>
 
-        {/* Searchbar */}
+        {/* Searchbar - Desktop */}
         <div className="hidden lg:flex flex-1 max-w-2xl mx-6">
           <div className="relative w-full" ref={containerRef}>
             <div className="flex items-center rounded-full overflow-hidden bg-base-100 shadow-md">
@@ -556,7 +557,7 @@ const OwnerNavbar = ({
               </button>
             </div>
             {showDropdown && (
-              <div className="absolute top-full left-0 right-0 mt-1 bg-base-300 rounded-lg shadow-lg border border-base-100 z-50">
+              <div className="absolute top-full left-0 right-0 mt-1 bg-base-300 rounded-lg shadow-lg border border-base-100 z-60">
                 <div className="p-2">
                   <div className="flex justify-between items-center px-2 py-1">
                     <span className="text-xs text-base-content">
@@ -586,58 +587,50 @@ const OwnerNavbar = ({
           </div>
         </div>
 
-        {/* Icons */}
-        <div className="hidden lg:flex items-center justify-center gap-5">
-          <div className="flex items-center gap-4">
-            <button
-              onClick={handleInbox}
-              className="relative rounded-full p-2.5 bg-base-100 cursor-pointer hover:bg-base-100/60 shadow-md transition-all"
-            >
-              <img src={inboxIcon} alt="inbox icon" className="w-6 h-6" />
-            </button>
-            <button
-              onClick={handleNotification}
-              className="relative rounded-full p-2.5 bg-base-100 cursor-pointer hover:bg-base-100/60 shadow-md transition-all"
-            >
-              <img
-                src={notificationIcon}
-                alt="notification icon"
-                className="w-6 h-6"
-              />
-            </button>
-          </div>
-          <div className="w-0.5 h-6 bg-secondary/60 rounded-full" />
+        {/* Icons - Mobile */}
+        <div className="flex items-center gap-0 lg:gap-4">
+          <button
+            onClick={handleNotification}
+            className="relative bg-transparent lg:bg-base-100 p-2 lg:p-2.5 flex items-center justify-center rounded-full hover:bg-base-content/10 lg:hover:bg-base-100/60 lg:shadow-md shrink-0 cursor-pointer transition-all duration-300"
+          >
+            <img
+              src={notificationIcon}
+              alt="notification icon"
+              className="w-5 lg:w-6 h-5 lg:h-6"
+            />
+          </button>
           <button
             onClick={() => setIsLogoutOpen(true)}
-            className="rounded-full p-2.5 bg-base-100 cursor-pointer hover:bg-base-100/60 shadow-md transition-all"
+            className="relative bg-transparent lg:bg-base-100 p-2 lg:p-2.5 flex items-center justify-center rounded-full hover:bg-base-content/10 lg:hover:bg-base-100/60 lg:shadow-md shrink-0 cursor-pointer transition-all duration-300"
           >
-            <img src={logoutIcon} alt="logout icon" className="w-6 h-6" />
+            <img
+              src={logoutIcon}
+              alt="logout icon"
+              className="w-5 lg:w-6 h-5 lg:h-6"
+            />
           </button>
-        </div>
-
-        <div className="lg:hidden flex items-center">
-          <button
+          {/* <button
             onClick={() => setIsProfileOpen(true)}
-            className="btn btn-ghost btn-square"
+            className="p-1 cursor-pointer rounded-full hover:bg-base-300 shrink-0 flex items-center justify-center"
           >
             {user?.fotoProfil ? (
               <img
-                src={user.fotoProfil}
+                src={user?.fotoProfil || emptyProfile}
                 alt={user.namaLengkap || user.email}
-                className="w-6 h-6 rounded-full object-cover"
+                className="w-9 h-9 rounded-full object-cover"
               />
             ) : (
               <img
                 src={emptyProfile}
                 alt="user profile"
-                className="w-6 h-6 rounded-full object-cover"
+                className="w-9 h-9 rounded-full object-cover"
               />
             )}
-          </button>
+          </button> */}
         </div>
       </nav>
 
-      <MobileMenu
+      {/* <MobileMenu
         isOpen={isMobileMenuOpen}
         onClose={() => setIsMobileMenuOpen(false)}
         currentPath={location.pathname}
@@ -645,7 +638,7 @@ const OwnerNavbar = ({
         onLogout={() => setIsLogoutOpen(true)}
         onInbox={handleInbox}
         onNotification={handleNotification}
-      />
+      /> */}
 
       <LogoutModal
         isOpen={isLogoutOpen}

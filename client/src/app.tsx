@@ -12,7 +12,6 @@ import Beranda from "@/pages/Beranda";
 import ResetPassword from "@/pages/ResetPassword";
 import Wishlist from "@/pages/Wishlist";
 import OwnerDashboard from "@/pages/owner/OwnerDashboard";
-import Analitik from "@/pages/owner/Analitik";
 import ManajemenAdmin from "@/pages/owner/ManajemenAdmin";
 import ManajemenProperti from "@/pages/owner/ManajemenProperti";
 import Laporan from "@/pages/owner/Laporan";
@@ -60,7 +59,6 @@ const App = () => {
               }
             >
               <Route path="/owner/dashboard" element={<OwnerDashboard />} />
-              <Route path="/owner/analitik" element={<Analitik />} />
               <Route path="/owner/kelola-admin" element={<ManajemenAdmin />} />
               <Route
                 path="/owner/kelola-properti"

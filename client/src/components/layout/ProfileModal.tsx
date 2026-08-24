@@ -80,11 +80,19 @@ const ProfileModal = ({ isOpen, onClose }: ProfileProps) => {
     }
 
     if (preview) URL.revokeObjectURL(preview);
-    setPreview(URL.createObjectURL(file));
+    const newPreview = URL.createObjectURL(file);
+    setPreview(newPreview);
 
-    const sukses = await updateProfil({ fotoProfil: file });
-    if (sukses) {
-      toast.success("Foto profil berhasil diperbarui!");
+    try {
+      const sukses = await updateProfil({ fotoProfil: file });
+      if (!sukses) {
+        setPreview(user?.fotoProfil || null);
+        toast.error("Gagal mengupdate foto profil");
+      }
+    } catch (error) {
+      console.error("Upload error:", error);
+      setPreview(user?.fotoProfil || null);
+      toast.error("Terjadi kesalahan saat upload");
     }
   };
 

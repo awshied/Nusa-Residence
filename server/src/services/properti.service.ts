@@ -12,7 +12,6 @@ export type DataBuatProperti = {
   kodePos?: string;
   latitude: number;
   longitude: number;
-  nomorTelepon?: string;
   luasBangunan?: number;
   deskripsi?: string;
   amenities?: Amenities[];
@@ -20,9 +19,18 @@ export type DataBuatProperti = {
   gambarUrls?: string[];
 };
 
+export type DataUbahProperti = Partial<
+  Omit<DataBuatProperti, "adminId" | "gambarUrls">
+>;
+
 // Owner membuat properti baru dengan Admin sebagai pengelola lebih lanjut (Owner Only)
 export const buatProperti = async (ownerId: string, data: DataBuatProperti) => {
   try {
+    console.log(
+      "🏨 Creating property with data:",
+      JSON.stringify(data, null, 2),
+    );
+
     const owner = await prisma.pengguna.findUnique({
       where: { id: ownerId },
       select: { peran: true },
@@ -34,6 +42,15 @@ export const buatProperti = async (ownerId: string, data: DataBuatProperti) => {
         pesan: "Hanya Owner yang dapat membuat properti.",
       };
     }
+
+    if (!data.adminId) {
+      return {
+        sukses: false,
+        pesan: "Admin wajib dipilih untuk mengelola properti.",
+      };
+    }
+
+    console.log("🔍 Checking admin with ID:", data.adminId);
 
     const admin = await prisma.pengguna.findUnique({
       where: { id: data.adminId },
@@ -52,16 +69,14 @@ export const buatProperti = async (ownerId: string, data: DataBuatProperti) => {
     if (admin.peran !== "ADMIN") {
       return {
         sukses: false,
-        pesan:
-          "Pengguna ini bukan Admin. Harap gunakan alamat email Admin yang valid.",
+        pesan: "Pengguna ini bukan Admin.",
       };
     }
 
     if (admin.propertiDikelola) {
       return {
         sukses: false,
-        pesan:
-          "Admin ini sudah mengelola properti lain. Mohon temukan Admin lain yang tersedia agar dapat mengelola properti ini.",
+        pesan: "Admin ini sudah mengelola properti lain.",
       };
     }
 
@@ -79,7 +94,6 @@ export const buatProperti = async (ownerId: string, data: DataBuatProperti) => {
           latitude: data.latitude,
           longitude: data.longitude,
           lokasi: `POINT(${data.longitude} ${data.latitude})`,
-          nomorTelepon: data.nomorTelepon,
           luasBangunan: data.luasBangunan,
           deskripsi: data.deskripsi,
           amenities: data.amenities || [],
@@ -111,7 +125,9 @@ export const buatProperti = async (ownerId: string, data: DataBuatProperti) => {
         admin: {
           select: { id: true, email: true, namaLengkap: true },
         },
-        gambar: true,
+        gambar: {
+          orderBy: { urutan: "asc" },
+        },
         tipeKamar: true,
       },
     });
@@ -121,8 +137,10 @@ export const buatProperti = async (ownerId: string, data: DataBuatProperti) => {
       pesan: `Properti ${data.nama} berhasil dibuat.`,
       data: propertiWithRelations,
     };
-  } catch (error) {
+  } catch (error: any) {
     console.error("Buat properti error:", error);
+    console.error("❌ Stack trace:", error.stack);
+
     return {
       sukses: false,
       pesan: "Terjadi kesalahan pada server.",
@@ -203,6 +221,14 @@ export const unggahGambarProperti = async (
       });
     }
 
+    const lastImage = await prisma.propertiGambar.findFirst({
+      where: { propertiId },
+      orderBy: { urutan: "desc" },
+      select: { urutan: true },
+    });
+
+    const startOrder = lastImage ? lastImage.urutan + 1 : 0;
+
     const gambar = await prisma.$transaction(
       urls.map((url, index) =>
         prisma.propertiGambar.create({
@@ -210,7 +236,7 @@ export const unggahGambarProperti = async (
             propertiId,
             url,
             isUtama: isUtama && index === 0,
-            urutan: index,
+            urutan: startOrder + index,
           },
         }),
       ),
@@ -455,7 +481,6 @@ export const ubahProperti = async (
     kodePos?: string;
     latitude?: number;
     longitude?: number;
-    nomorTelepon?: string;
     luasBangunan?: number;
     deskripsi?: string;
     amenities?: Amenities[];
@@ -476,7 +501,22 @@ export const ubahProperti = async (
       };
     }
 
-    const updateData: any = {};
+    const updateData: {
+      nama?: string;
+      kategori?: KategoriProperti;
+      namaJalan?: string;
+      kelurahan?: string;
+      kecamatan?: string;
+      kabupatenKota?: string;
+      provinsi?: string;
+      kodePos?: string;
+      latitude?: number;
+      longitude?: number;
+      lokasi?: string;
+      luasBangunan?: number;
+      deskripsi?: string;
+      amenities?: Amenities[];
+    } = {};
 
     if (data.nama !== undefined) updateData.nama = data.nama;
     if (data.kategori !== undefined) updateData.kategori = data.kategori;
@@ -487,8 +527,6 @@ export const ubahProperti = async (
       updateData.kabupatenKota = data.kabupatenKota;
     if (data.provinsi !== undefined) updateData.provinsi = data.provinsi;
     if (data.kodePos !== undefined) updateData.kodePos = data.kodePos;
-    if (data.nomorTelepon !== undefined)
-      updateData.nomorTelepon = data.nomorTelepon;
     if (data.luasBangunan !== undefined)
       updateData.luasBangunan = data.luasBangunan;
     if (data.deskripsi !== undefined) updateData.deskripsi = data.deskripsi;

@@ -18,6 +18,22 @@ import {
   updateProfilPengguna,
 } from "../services/auth.service";
 
+interface CloudinaryUploadResponse {
+  secure_url: string;
+  public_id: string;
+  version: number;
+  width: number;
+  height: number;
+  format: string;
+  resource_type: string;
+  created_at: string;
+  bytes: number;
+  url: string;
+  error?: {
+    message: string;
+  };
+}
+
 // Daftar atau buat akun baru (Klien Only)
 export const registrasi = async (req: Request, res: Response) => {
   try {
@@ -231,14 +247,55 @@ export const pembaruanProfil = async (req: Request, res: Response) => {
       jenisKelamin: gender,
     } = validasi.data;
 
-    const fotoUrl = req.file?.path;
+    let fotoUrl = "";
+
+    if (req.file) {
+      try {
+        const cloudName = process.env.CLOUDINARY_CLOUD_NAME;
+        const apiKey = process.env.CLOUDINARY_API_KEY;
+        const uploadPreset = "nusa-residence";
+
+        const base64 = req.file.buffer.toString("base64");
+        const dataUri = `data:${req.file.mimetype};base64,${base64}`;
+
+        const formData = new FormData();
+        formData.append("file", dataUri);
+        formData.append("upload_preset", uploadPreset);
+        formData.append("api_key", apiKey || "");
+        formData.append("folder", "nusa-residence/profil");
+        formData.append("public_id", `${userId}_${Date.now()}`);
+
+        const response = await fetch(
+          `https://api.cloudinary.com/v1_1/${cloudName}/image/upload`,
+          {
+            method: "POST",
+            body: formData,
+          },
+        );
+
+        const result = (await response.json()) as CloudinaryUploadResponse;
+
+        if (response.ok) {
+          fotoUrl = result.secure_url;
+        } else {
+          throw new Error(
+            result.error?.message || "Gagal upload ke dalam Cloudinary.",
+          );
+        }
+      } catch (cloudinaryError: any) {
+        console.error(
+          "Cloudinary sedang mengalami gangguan:",
+          cloudinaryError.message,
+        );
+      }
+    }
 
     const hasil = await updateProfilPengguna({
       userId,
       nama,
       kontak,
       gender,
-      fotoUrl,
+      fotoUrl: fotoUrl || undefined,
     });
 
     if (!hasil.sukses) {

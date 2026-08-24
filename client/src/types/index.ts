@@ -116,6 +116,37 @@ export type KategoriProperti =
   | "KOSAN"
   | "KONTRAKAN";
 
+export type Amenities =
+  | "AIR_CONDITIONER"
+  | "TELEVISI"
+  | "WIFI"
+  | "KOLAM_RENANG"
+  | "PARKIR"
+  | "BATHUB"
+  | "RESTORAN"
+  | "GYM"
+  | "SPA"
+  | "MUSHOLA"
+  | "MINI_BAR"
+  | "KITCHENETTE"
+  | "MESIN_CUCI"
+  | "KIPAS_ANGIN"
+  | "AIR_PANAS"
+  | "BREAKFAST"
+  | "ROOM_SERVICE"
+  | "RESEPSIONIS_24JAM"
+  | "KEAMANAN_24JAM"
+  | "AREA_BERMAIN_ANAK"
+  | "TAMAN"
+  | "BALKON"
+  | "DAPUR_UMUM"
+  | "RUANG_TAMU"
+  | "AIR_ISI_ULANG"
+  | "LISTRIK"
+  | "GAS_ALAM"
+  | "KAMAR_MANDI_DALAM"
+  | "KAMAR_MANDI_LUAR";
+
 export type TipeAdminTersedia = {
   id: string;
   email: string;
@@ -135,10 +166,9 @@ export type TipeProperti = {
   kodePos?: string;
   latitude: number;
   longitude: number;
-  nomorTelepon?: string;
   luasBangunan?: number;
   deskripsi?: string;
-  amenities: string[];
+  amenities: Amenities[];
   ratingRataRata: number;
   jumlahRating: number;
   dibuatPada: string;
@@ -174,10 +204,9 @@ export type DataBuatProperti = {
   kodePos?: string;
   latitude: number;
   longitude: number;
-  nomorTelepon?: string;
   luasBangunan?: number;
   deskripsi?: string;
-  amenities: string[];
-  adminId?: string;
+  amenities: Amenities[];
+  adminId: string;
   gambar?: File[];
 };

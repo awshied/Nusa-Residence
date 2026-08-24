@@ -14,6 +14,9 @@ export type HasilRegistrasi = {
     id: string;
     email: string;
     namaLengkap?: string | null;
+    nomorTelepon?: string | null;
+    jenisKelamin?: JenisKelamin | null;
+    fotoProfil?: string | null;
     peran: string;
     token: string;
   };
@@ -26,6 +29,9 @@ export type HasilLogin = {
     id: string;
     email: string;
     namaLengkap?: string | null;
+    nomorTelepon?: string | null;
+    jenisKelamin?: JenisKelamin | null;
+    fotoProfil?: string | null;
     peran: string;
     token: string;
   };
@@ -109,6 +115,9 @@ export const loginPengguna = async (data: {
         email: true,
         kataSandi: true,
         namaLengkap: true,
+        nomorTelepon: true,
+        jenisKelamin: true,
+        fotoProfil: true,
         peran: true,
         statusAkun: true,
       },
@@ -159,6 +168,9 @@ export const loginPengguna = async (data: {
         id: pengguna.id,
         email: pengguna.email,
         namaLengkap: pengguna.namaLengkap,
+        nomorTelepon: pengguna.nomorTelepon,
+        jenisKelamin: pengguna.jenisKelamin,
+        fotoProfil: pengguna.fotoProfil,
         peran: pengguna.peran,
         token,
       },

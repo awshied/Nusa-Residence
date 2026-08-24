@@ -13,6 +13,7 @@ const LogoutModal = ({ isOpen, onClose }: Props) => {
 
   const handleLogout = () => {
     logout();
+    onClose();
     navigate("/");
   };
 

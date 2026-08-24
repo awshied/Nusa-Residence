@@ -15,6 +15,10 @@ api.interceptors.request.use(
       config.headers.Authorization = `Bearer ${token}`;
     }
 
+    if (config.data instanceof FormData) {
+      delete config.headers["Content-Type"];
+    }
+
     return config;
   },
   (error) => {
@@ -27,7 +31,12 @@ api.interceptors.response.use(
     return response;
   },
   (error) => {
-    console.error(error.response?.status, error.response?.data);
+    console.error("API Error:", {
+      status: error.response?.status,
+      data: error.response?.data,
+      config: error.config,
+    });
+
     if (error.response?.status === 401) {
       localStorage.removeItem("token");
       localStorage.removeItem("user");

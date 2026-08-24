@@ -1,16 +1,15 @@
 import { useState } from "react";
-import { Link, Outlet, useLocation } from "react-router-dom";
+import { Link, Outlet, useLocation, useNavigate } from "react-router-dom";
 import { ChevronDown, ChevronLeft, ChevronRight } from "lucide-react";
 
 import { useAuth } from "@/hooks/useAuth";
 import ProfileModal from "./ProfileModal";
 import OwnerNavbar from "./OwnerNavbar";
+import OwnerMobileTabs from "./OwnerMobileTabs";
 
 import logoWeb from "@/assets/logo-web.png";
 import dashboardOutlineIcon from "@/assets/icons/dashboard-outline.png";
 import dashboardFillIcon from "@/assets/icons/dashboard-fill.png";
-import analyticOutlineIcon from "@/assets/icons/analytics-outline.png";
-import analyticFillIcon from "@/assets/icons/analytics-fill.png";
 import managementOutlineIcon from "@/assets/icons/management-outline.png";
 import managementFillIcon from "@/assets/icons/management-fill.png";
 import adminManagementOutlineIcon from "@/assets/icons/admin-management-outline.png";
@@ -42,12 +41,6 @@ const MenuItem: NavigationPath[] = [
     iconFill: dashboardFillIcon,
   },
   {
-    path: "/owner/analitik",
-    label: "Analitik",
-    iconOutline: analyticOutlineIcon,
-    iconFill: analyticFillIcon,
-  },
-  {
     label: "Kelola",
     iconOutline: managementOutlineIcon,
     iconFill: managementFillIcon,
@@ -76,7 +69,9 @@ const MenuItem: NavigationPath[] = [
 
 const OwnerSidebar = ({ isOpen, setIsOpen }: Props) => {
   const location = useLocation();
+  const navigate = useNavigate();
   const { user } = useAuth();
+
   const [openDropdowns, setOpenDropdowns] = useState<Record<string, boolean>>({
     Kelola: false,
   });
@@ -311,6 +306,10 @@ const OwnerSidebar = ({ isOpen, setIsOpen }: Props) => {
         <main className="mt-3">
           <Outlet />
         </main>
+        <OwnerMobileTabs
+          currentPath={location.pathname}
+          onNavigate={(path) => navigate(path)}
+        />
       </div>
 
       <ProfileModal

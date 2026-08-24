@@ -77,10 +77,10 @@ export const kirimEmailResetPassword = async (
       `,
     });
 
-    console.log("📧 Email reset password terkirim:", info.messageId);
+    console.log("Email reset password terkirim:", info.messageId);
     return { sukses: true, info };
   } catch (error) {
-    console.error("❌ Gagal kirim email:", error);
+    console.error("Gagal kirim email:", error);
     return { sukses: false, error };
   }
 };

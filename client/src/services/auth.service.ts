@@ -7,6 +7,7 @@ import type {
   TipeProfil,
   TipeResponseAuth,
   TipeResponseUpdateProfil,
+  TipeUser,
   UpdateProfilePayload,
 } from "@/types";
 
@@ -59,17 +60,12 @@ export const simpanSession = (data: TipeResponseAuth["data"]): void => {
   }
 };
 
-export const getCurrentUser = (): {
-  id: string;
-  email: string;
-  namaLengkap?: string | null;
-  fotoProfil?: string | null;
-  peran: string;
-} | null => {
+export const getCurrentUser = (): TipeUser | null => {
   const userStr = localStorage.getItem("user");
   if (!userStr) return null;
   try {
-    return JSON.parse(userStr);
+    const user = JSON.parse(userStr);
+    return user;
   } catch {
     return null;
   }
@@ -125,11 +121,15 @@ export const pembaruanProfil = async (
     formData.append("fotoProfil", payload.fotoProfil);
   }
 
-  const response = await api.post("/auth/profil/ubah", formData, {
-    headers: {
-      "Content-Type": "multipart/form-data",
-    },
-  });
-
-  return response.data;
+  try {
+    const response = await api.post("/auth/profil/ubah", formData);
+    return response.data;
+  } catch (error: any) {
+    console.error("Upload error details:", {
+      status: error.response?.status,
+      data: error.response?.data,
+      message: error.message,
+    });
+    throw error;
+  }
 };

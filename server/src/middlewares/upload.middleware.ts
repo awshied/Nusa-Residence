@@ -1,67 +1,129 @@
 import multer from "multer";
-import { CloudinaryStorage } from "multer-storage-cloudinary-v2";
-import cloudinary from "../configs/cloudinary";
+import { Request, Response, NextFunction } from "express";
+import {
+  ALLOWED_FILE_TYPES,
+  isValidFileType,
+  formatFileSize,
+} from "../utils/pictureFile";
 
-const allowedFile = ["image/jpeg", "image/png", "image/webp", "image/gif"];
-const maxFileSize = 5 * 1024 * 1024;
+const MAX_FILE_SIZE = 5 * 1024 * 1024;
+
+type UploadError = Error | multer.MulterError | null;
 
 const fileFilter = (
-  req: any,
+  req: Request,
   file: Express.Multer.File,
   cb: multer.FileFilterCallback,
 ) => {
-  if (allowedFile.includes(file.mimetype)) {
+  if (isValidFileType(file.mimetype)) {
     cb(null, true);
   } else {
     cb(
-      new Error("Tipe file tidak didukung. Gunakan JPEG, PNG, WEBP, atau GIF."),
+      new Error(
+        `Tipe file tidak didukung. Gunakan: ${ALLOWED_FILE_TYPES.join(", ")}`,
+      ),
     );
   }
 };
 
-const storage = new CloudinaryStorage({
-  cloudinary: cloudinary as any,
-  params: async (req: any, file: Express.Multer.File) => {
-    const userId = req.user?.id || "anonymous";
-    const timestamp = Date.now();
-
-    return {
-      folder: "nusa-residence/profil",
-      format: "webp",
-      public_id: `${userId}_${timestamp}`,
-      transformation: [
-        { width: 400, height: 400, crop: "limit" },
-        { quality: "auto" },
-      ],
-    };
-  },
-});
-
-export const uploadFotoProfil = multer({
-  storage: storage,
+const uploadFoto = multer({
+  storage: multer.memoryStorage(),
   limits: {
-    fileSize: maxFileSize,
+    fileSize: MAX_FILE_SIZE,
   },
   fileFilter: fileFilter,
 });
 
-export function handleUploadError(err: any, req: any, res: any, next: any) {
+const handleUploadError = (
+  err: UploadError,
+  req: Request,
+  res: Response,
+  next: NextFunction,
+) => {
   if (err instanceof multer.MulterError) {
+    console.error("Multer error:", err.code, err.message);
+
     if (err.code === "LIMIT_FILE_SIZE") {
       return res.status(400).json({
         sukses: false,
-        pesan: "Ukuran file terlalu besar. Maksimal 5MB.",
+        pesan: `Ukuran file terlalu besar. Maksimal ${formatFileSize(MAX_FILE_SIZE)}.`,
       });
     }
+
+    if (err.code === "LIMIT_UNEXPECTED_FILE") {
+      return res.status(400).json({
+        sukses: false,
+        pesan: "Hanya boleh upload 1 file.",
+      });
+    }
+
     return res.status(400).json({
       sukses: false,
       pesan: `Error upload: ${err.message}`,
     });
-  } else if (err) {
+  }
+
+  if (err) {
+    console.error("Upload error:", err.message);
     return res.status(400).json({
       sukses: false,
-      pesan: err.message,
+      pesan: err.message || "Terjadi error saat upload file.",
     });
   }
+
   next();
-}
+};
+
+export const handleMultipartForm = (
+  fieldName: string,
+  maxCount: number = 5,
+) => {
+  return (req: Request, res: Response, next: NextFunction): void => {
+    uploadFoto.array(fieldName, maxCount)(req, res, (err) => {
+      if (err) {
+        return handleUploadError(err, req, res, next);
+      }
+
+      console.log("📥 Body setelah multer:", req.body);
+      console.log("📥 Files:", req.files ? (req.files as any).length : 0);
+
+      if (req.body.amenities && typeof req.body.amenities === "string") {
+        try {
+          req.body.amenities = JSON.parse(req.body.amenities);
+          console.log("✅ Amenities parsed to array:", req.body.amenities);
+        } catch (e) {
+          console.log("❌ Failed to parse amenities, keeping as string");
+        }
+      }
+
+      next();
+    });
+  };
+};
+
+export const uploadSingleFile = (fieldName: string) => {
+  return (req: Request, res: Response, next: NextFunction) => {
+    uploadFoto.single(fieldName)(req, res, (err) => {
+      if (err) {
+        return handleUploadError(err, req, res, next);
+      }
+
+      next();
+    });
+  };
+};
+
+export const uploadMultipleFiles = (
+  fieldName: string,
+  maxCount: number = 5,
+) => {
+  return (req: Request, res: Response, next: NextFunction) => {
+    uploadFoto.array(fieldName, maxCount)(req, res, (err) => {
+      if (err) {
+        return handleUploadError(err, req, res, next);
+      }
+
+      next();
+    });
+  };
+};

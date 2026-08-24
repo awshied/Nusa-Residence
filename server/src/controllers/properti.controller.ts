@@ -16,11 +16,33 @@ import {
   unggahGambarProperti,
 } from "../services/properti.service";
 
+type CloudinaryUploadResult = {
+  secure_url: string;
+  public_id: string;
+  version: number;
+  width: number;
+  height: number;
+  format: string;
+  resource_type: string;
+  created_at: string;
+  bytes: number;
+  url: string;
+  error?: {
+    message: string;
+  };
+};
+
+type UploadedFile = {
+  buffer: Buffer;
+  mimetype: string;
+  originalname: string;
+  size: number;
+};
+
 // Tambah properti baru (Owner Only)
 export const tambahPropertiBaru = async (req: Request, res: Response) => {
   try {
     const userId = req.user?.id;
-
     if (!userId) {
       return res.status(401).json({
         sukses: false,
@@ -28,8 +50,44 @@ export const tambahPropertiBaru = async (req: Request, res: Response) => {
       });
     }
 
-    const validasi = skemaBuatProperti.safeParse(req.body);
+    const body = req.body;
 
+    const latitude = parseFloat(body.latitude) || 0;
+    const longitude = parseFloat(body.longitude) || 0;
+    const luasBangunan = body.luasBangunan
+      ? parseFloat(body.luasBangunan)
+      : undefined;
+
+    let amenities = body.amenities || [];
+    if (typeof amenities === "string") {
+      try {
+        amenities = JSON.parse(amenities);
+      } catch (e) {
+        amenities = [];
+      }
+    }
+    if (!Array.isArray(amenities)) {
+      amenities = [];
+    }
+
+    const dataToValidate = {
+      nama: body.nama || "",
+      kategori: body.kategori || "",
+      namaJalan: body.namaJalan || "",
+      kelurahan: body.kelurahan || "",
+      kecamatan: body.kecamatan || "",
+      kabupatenKota: body.kabupatenKota || "",
+      provinsi: body.provinsi || "",
+      kodePos: body.kodePos || undefined,
+      latitude: latitude,
+      longitude: longitude,
+      luasBangunan: luasBangunan,
+      deskripsi: body.deskripsi || undefined,
+      amenities: amenities,
+      adminId: body.adminId || "",
+    };
+
+    const validasi = skemaBuatProperti.safeParse(dataToValidate);
     if (!validasi.success) {
       return res.status(400).json({
         sukses: false,
@@ -38,14 +96,66 @@ export const tambahPropertiBaru = async (req: Request, res: Response) => {
       });
     }
 
-    const hasil = await buatProperti(userId, validasi.data);
+    let gambarUrls: string[] = [];
+    const files = req.files as UploadedFile[] | undefined;
+
+    if (files && files.length > 0) {
+      const cloudName = process.env.CLOUDINARY_CLOUD_NAME;
+      const apiKey = process.env.CLOUDINARY_API_KEY;
+      const uploadPreset = "nusa-residence";
+
+      if (!cloudName || !apiKey) {
+        return res.status(500).json({
+          sukses: false,
+          pesan: "Konfigurasi Cloudinary tidak lengkap.",
+        });
+      }
+
+      const uploadPromises = files.map(async (file, index) => {
+        const base64 = file.buffer.toString("base64");
+        const dataUri = `data:${file.mimetype};base64,${base64}`;
+
+        const formData = new FormData();
+        formData.append("file", dataUri);
+        formData.append("upload_preset", uploadPreset);
+        formData.append("api_key", apiKey);
+        formData.append("folder", "nusa-residence/properti");
+
+        const response = await fetch(
+          `https://api.cloudinary.com/v1_1/${cloudName}/image/upload`,
+          {
+            method: "POST",
+            body: formData,
+          },
+        );
+
+        const result = (await response.json()) as CloudinaryUploadResult;
+        if (!response.ok) {
+          throw new Error(
+            result.error?.message || "Gagal upload ke Cloudinary.",
+          );
+        }
+
+        return result.secure_url;
+      });
+
+      gambarUrls = await Promise.all(uploadPromises);
+      console.log(
+        `${gambarUrls.length} gambar berhasil diupload ke Cloudinary.`,
+      );
+    }
+
+    const hasil = await buatProperti(userId, {
+      ...validasi.data,
+      gambarUrls,
+    });
 
     if (!hasil.sukses) {
       return res.status(400).json(hasil);
     }
 
     return res.status(201).json(hasil);
-  } catch (error) {
+  } catch (error: any) {
     console.error("Anda tidak dapat menambah properti baru:", error);
     return res.status(500).json({
       sukses: false,
@@ -54,7 +164,7 @@ export const tambahPropertiBaru = async (req: Request, res: Response) => {
   }
 };
 
-// Upload gambar properti (Owner Only)
+// Upload gambar tambahan untuk properti yang sudah ada (Owner Only)
 export const uploadGambarProperti = async (req: Request, res: Response) => {
   try {
     const userId = req.user?.id;
@@ -67,17 +177,12 @@ export const uploadGambarProperti = async (req: Request, res: Response) => {
       });
     }
 
-    if (!req.files || (req.files as Express.Multer.File[]).length === 0) {
+    if (!req.files || (req.files as UploadedFile[]).length === 0) {
       return res.status(400).json({
         sukses: false,
         pesan: "Tidak ada file yang diupload.",
       });
     }
-
-    const files = req.files as Express.Multer.File[];
-    const urls = files.map((file) => file.path);
-
-    const isUtama = req.query.utama === "true";
 
     if (Array.isArray(id)) {
       return res.status(400).json({
@@ -85,6 +190,41 @@ export const uploadGambarProperti = async (req: Request, res: Response) => {
         pesan: "Parameter id tidak valid.",
       });
     }
+
+    const files = req.files as UploadedFile[];
+
+    const cloudName = process.env.CLOUDINARY_CLOUD_NAME;
+    const apiKey = process.env.CLOUDINARY_API_KEY;
+    const uploadPreset = "nusa-residence";
+
+    const uploadPromises = files.map(async (file) => {
+      const base64 = file.buffer.toString("base64");
+      const dataUri = `data:${file.mimetype};base64,${base64}`;
+
+      const formData = new FormData();
+      formData.append("file", dataUri);
+      formData.append("upload_preset", uploadPreset);
+      formData.append("api_key", apiKey || "");
+      formData.append("folder", `nusa-residence/properti/${id}`);
+
+      const response = await fetch(
+        `https://api.cloudinary.com/v1_1/${cloudName}/image/upload`,
+        {
+          method: "POST",
+          body: formData,
+        },
+      );
+
+      const result = (await response.json()) as CloudinaryUploadResult;
+      if (!response.ok) {
+        throw new Error(result.error?.message || "Gagal upload ke Cloudinary.");
+      }
+
+      return result.secure_url;
+    });
+
+    const urls = await Promise.all(uploadPromises);
+    const isUtama = req.query.utama === "true";
 
     const hasil = await unggahGambarProperti(id, userId, urls, isUtama);
 
@@ -372,34 +512,6 @@ export const getKetersediaanAdmin = async (req: Request, res: Response) => {
     return res.status(200).json(hasil);
   } catch (error) {
     console.error("Anda tidak dapat memuat ketersediaan admin:", error);
-    return res.status(500).json({
-      sukses: false,
-      pesan: "Terjadi kesalahan pada server.",
-    });
-  }
-};
-
-export const uploadGambarSementara = async (req: Request, res: Response) => {
-  try {
-    if (!req.files || (req.files as Express.Multer.File[]).length === 0) {
-      return res.status(400).json({
-        sukses: false,
-        pesan: "Tidak ada file yang diupload.",
-      });
-    }
-
-    const files = req.files as Express.Multer.File[];
-    const hasil = files.map((file) => ({
-      url: file.path,
-      publicId: file.filename,
-    }));
-
-    return res.status(200).json({
-      sukses: true,
-      data: hasil,
-    });
-  } catch (error) {
-    console.error("Upload gambar sementara error:", error);
     return res.status(500).json({
       sukses: false,
       pesan: "Terjadi kesalahan pada server.",

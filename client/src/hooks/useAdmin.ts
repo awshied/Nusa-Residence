@@ -80,13 +80,19 @@ export const useUpdateStatusAdmin = () => {
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: ({
+    mutationFn: async ({
       id,
       status,
     }: {
       id: string;
       status: "AKTIF" | "NONAKTIF" | "DIBLOKIR";
-    }) => updateStatusAdmin(id, status),
+    }) => {
+      const response = await updateStatusAdmin(id, status);
+      if (!response.sukses) {
+        throw new Error(response.pesan || "Gagal mengubah status Admin.");
+      }
+      return response;
+    },
     onSuccess: (response) => {
       if (response.sukses) {
         toast.success(response.pesan || "Status Admin berhasil diperbarui!");
@@ -113,7 +119,13 @@ export const useAdminFired = () => {
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: (id: string) => pecatAdmin(id),
+    mutationFn: async (id: string) => {
+      const response = await pecatAdmin(id);
+      if (!response.sukses) {
+        throw new Error(response.pesan || "Gagal menghapus Admin.");
+      }
+      return response;
+    },
     onSuccess: (response) => {
       if (response.sukses) {
         toast.success(response.pesan || "Admin berhasil dipecat!");

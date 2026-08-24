@@ -10,10 +10,7 @@ import {
   bikinOwner,
 } from "../controllers/auth.controller";
 import { verifikasiAutentikasi } from "../middlewares/auth.middleware";
-import {
-  handleUploadError,
-  uploadFotoProfil,
-} from "../middlewares/upload.middleware";
+import { uploadSingleFile } from "../middlewares/upload.middleware";
 
 const router = Router();
 
@@ -29,8 +26,7 @@ router.get("/profil", verifikasiAutentikasi, getProfil);
 router.post(
   "/profil/ubah",
   verifikasiAutentikasi,
-  uploadFotoProfil.single("foto"),
-  handleUploadError,
+  uploadSingleFile("fotoProfil"),
   pembaruanProfil,
 );
 
