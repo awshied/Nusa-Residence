@@ -6,7 +6,7 @@ import {
 import {
   buatAdmin,
   getAdminByOwner,
-  pecatAdmin,
+  hapusAdminPermanen,
   updateStatusKeaktifan,
 } from "../services/admin.service";
 import { StatusAkun } from "@prisma/client";
@@ -126,7 +126,7 @@ export const perbaruiStatusKeaktifan = async (req: Request, res: Response) => {
   }
 };
 
-// Pecat Admin yang tidak bertanggung jawab atas properti (Owner Only)
+// Hapus Admin yang tidak memiliki tanggung jawab secara permanen (Owner Only)
 export const hapusAdmin = async (req: Request, res: Response) => {
   try {
     const userId = req.user?.id;
@@ -146,7 +146,7 @@ export const hapusAdmin = async (req: Request, res: Response) => {
       });
     }
 
-    const hasil = await pecatAdmin(id, userId);
+    const hasil = await hapusAdminPermanen(id, userId);
 
     if (!hasil.sukses) {
       return res.status(400).json(hasil);

@@ -137,8 +137,21 @@ export const updateStatusKeaktifan = async (
         peran: "ADMIN",
         dibuatOlehId: ownerId,
       },
-      include: {
-        propertiDikelola: true,
+      select: {
+        id: true,
+        email: true,
+        namaLengkap: true,
+        nomorTelepon: true,
+        fotoProfil: true,
+        peran: true,
+        statusAkun: true,
+        dibuatPada: true,
+        propertiDikelola: {
+          select: {
+            id: true,
+            nama: true,
+          },
+        },
       },
     });
 
@@ -149,14 +162,7 @@ export const updateStatusKeaktifan = async (
       };
     }
 
-    if (admin.propertiDikelola) {
-      return {
-        sukses: false,
-        pesan: `Admin ini sedang mengelola properti "${admin.propertiDikelola.nama}" sehingga status keaktifannya tidak dapat diubah.`,
-      };
-    }
-
-    if (admin.statusAkun === "DIBLOKIR" && statusBaru === "AKTIF") {
+    if (admin.statusAkun === "DIBLOKIR") {
       return {
         sukses: false,
         pesan: "Admin dengan status DIBLOKIR tidak dapat diaktifkan kembali.",
@@ -188,8 +194,8 @@ export const updateStatusKeaktifan = async (
 
     const statusLabels = {
       AKTIF: "Aktif",
-      NONAKTIF: "Nonaktif (Cuti)",
-      DIBLOKIR: "Diblokir",
+      NONAKTIF: "Cuti",
+      DIBLOKIR: "Dipecat",
     };
 
     return {
@@ -206,17 +212,42 @@ export const updateStatusKeaktifan = async (
   }
 };
 
-// Pecat Admin yang tidak bertanggung jawab atas properti (Owner Only)
-export const pecatAdmin = async (adminId: string, ownerId: string) => {
+// Hapus Admin yang tidak memiliki tanggung jawab secara permanen (Owner Only)
+export const hapusAdminPermanen = async (adminId: string, ownerId: string) => {
   try {
+    const owner = await prisma.pengguna.findUnique({
+      where: { id: ownerId },
+      select: { peran: true },
+    });
+
+    if (!owner || owner.peran !== "PEMILIK") {
+      return {
+        sukses: false,
+        pesan: "Hanya Owner yang dapat menghapus Admin.",
+      };
+    }
+
     const admin = await prisma.pengguna.findFirst({
       where: {
         id: adminId,
         peran: "ADMIN",
         dibuatOlehId: ownerId,
       },
-      include: {
-        propertiDikelola: true,
+      select: {
+        id: true,
+        email: true,
+        namaLengkap: true,
+        nomorTelepon: true,
+        fotoProfil: true,
+        peran: true,
+        statusAkun: true,
+        dibuatPada: true,
+        propertiDikelola: {
+          select: {
+            id: true,
+            nama: true,
+          },
+        },
       },
     });
 
@@ -230,7 +261,7 @@ export const pecatAdmin = async (adminId: string, ownerId: string) => {
     if (admin.propertiDikelola) {
       return {
         sukses: false,
-        pesan: `Admin ini sedang sibuk mengelola properti "${admin.propertiDikelola.nama}". Hapus properti terlebih dahulu agar Anda dapat memecat anomali ini.`,
+        pesan: `Admin ini masih bertanggung jawab atas properti "${admin.propertiDikelola.nama}". Hapus tanggung jawab properti terlebih dahulu sebelum menghapus Admin.`,
       };
     }
 
@@ -240,10 +271,10 @@ export const pecatAdmin = async (adminId: string, ownerId: string) => {
 
     return {
       sukses: true,
-      pesan: "Admin baru saja dipecat.",
+      pesan: "Admin berhasil dihapus dari sistem.",
     };
   } catch (error) {
-    console.error("Pecat admin error:", error);
+    console.error("Hapus admin permanen error:", error);
     return {
       sukses: false,
       pesan: "Terjadi kesalahan pada server.",

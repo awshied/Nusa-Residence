@@ -79,7 +79,7 @@ const OwnerMobileTabs = ({ currentPath, onNavigate }: MobileTabsProps) => {
 
   return (
     <div className="block lg:hidden fixed bottom-0 left-0 right-0 z-50 bg-base-100 border-t border-base-300 shadow-lg">
-      <div className="flex items-center justify-around px-2 py-2 max-w-screen-md mx-auto">
+      <div className="flex items-center justify-around px-2 py-2 max-w-3xl mx-auto">
         {MenuItem.map((item, index) => {
           const isActive = activeMenu === item.label;
 

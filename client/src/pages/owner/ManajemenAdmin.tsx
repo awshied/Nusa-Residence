@@ -1,46 +1,46 @@
 import { useEffect, useState } from "react";
 import { AnimatePresence, motion } from "framer-motion";
 import {
+  Activity,
   EllipsisVertical,
   Eye,
   Filter,
   Locate,
-  Pencil,
+  Lock,
   Phone,
   Plus,
   Search,
   Trash2,
   X,
 } from "lucide-react";
-import { useForm } from "react-hook-form";
+import { Controller, useForm } from "react-hook-form";
 import z from "zod";
 
 import { zodResolver } from "@hookform/resolvers/zod";
-import type { JenisKelamin, TipeAdmin } from "@/types";
+import type { TipeAdmin } from "@/types";
 import {
-  useAdminFired,
+  useAdminDeletePermanently,
   useAdminManagement,
   useCreateNewAdmin,
-  useUpdateStatusAdmin,
 } from "@/hooks/useAdmin";
 import { formatTanggal } from "@/lib/formatTanggal";
 
 import Loading from "@/components/layout/Loading";
-import AdminBaruModal from "@/components/layout/AdminBaruModal";
 import StatisticCard from "@/components/layout/StatisticCard";
-import profileBanner from "@/assets/profile-background.webp";
+import FloatingInput from "@/components/layout/FloatingInput";
+import UbahStatusAdminModal from "@/components/layout/UbahStatusAdminModal";
 import emptyAdmin from "@/assets/empty-admin.png";
 import emptyProfile from "@/assets/empty-profile.png";
 import adminManagementIcon from "@/assets/icons/admin-management-outline.png";
 import adminHolidayIcon from "@/assets/icons/admin-holiday-outline.png";
 import adminFiredIcon from "@/assets/icons/admin-fired-outline.png";
-import addNewAdminMobileIcon from "@/assets/icons/add-new-admin.png";
+import addNewAdminIcon from "@/assets/icons/add-new-admin.png";
 import usernameIcon from "@/assets/icons/username.png";
 import emailAddressIcon from "@/assets/icons/email-address.png";
 import passwordIcon from "@/assets/icons/password.png";
 import phoneNumberIcon from "@/assets/icons/phone.png";
 
-const skemaBuatAdminMobile = z.object({
+const skemaBuatAdmin = z.object({
   email: z
     .string()
     .email("Format alamat email yang Anda masukkan tidak valid.")
@@ -66,18 +66,17 @@ const skemaBuatAdminMobile = z.object({
     .optional(),
 });
 
-type TipeForm = z.infer<typeof skemaBuatAdminMobile>;
+type TipeForm = z.infer<typeof skemaBuatAdmin>;
 
 const ManajemenAdmin = () => {
-  const buatAdminMobile = useCreateNewAdmin();
-
   const {
+    control,
     register,
     handleSubmit,
     formState: { errors },
     reset,
   } = useForm<TipeForm>({
-    resolver: zodResolver(skemaBuatAdminMobile),
+    resolver: zodResolver(skemaBuatAdmin),
     defaultValues: {
       namaLengkap: "",
       email: "",
@@ -88,20 +87,27 @@ const ManajemenAdmin = () => {
 
   const [isNewAdminOpen, setIsNewAdminOpen] = useState(false);
   const [mobileNewAdminVisible, setMobileNewAdminVisible] = useState(false);
-  const [showDeleteModal, setShowDeleteModal] = useState(false);
-  const [showProfileModal, setShowProfileModal] = useState(false);
   const [selectedAdmin, setSelectedAdmin] = useState<TipeAdmin | null>(null);
-  const [selectedStatus, setSelectedStatus] = useState<
-    "AKTIF" | "NONAKTIF" | "DIBLOKIR"
-  >("AKTIF");
+  const [showMobileMenu, setShowMobileMenu] = useState(false);
+  const [mobileMenuPosition, setMobileMenuPosition] = useState<{
+    top: number;
+    right: number;
+  } | null>(null);
+  const [selectedAdminForMenu, setSelectedAdminForMenu] =
+    useState<TipeAdmin | null>(null);
+
+  const [showUbahStatusModal, setShowUbahStatusModal] = useState(false);
+  const [selectedAdminForStatus, setSelectedAdminForStatus] =
+    useState<TipeAdmin | null>(null);
+  const [showDeleteModal, setShowDeleteModal] = useState(false);
 
   const [viewportHeight, setViewportHeight] = useState(
     typeof window !== "undefined" ? window.innerHeight : 800,
   );
 
   const { data: adminList = [], isLoading } = useAdminManagement();
-  const updateStatus = useUpdateStatusAdmin();
-  const hapusAdmin = useAdminFired();
+  const buatAdminBaru = useCreateNewAdmin();
+  const hapusAdminPermanen = useAdminDeletePermanently();
 
   const adminAktif = adminList.filter(
     (admin) => admin.statusAkun === "AKTIF",
@@ -114,34 +120,52 @@ const ManajemenAdmin = () => {
   ).length;
   const totalAdmin = adminList.length;
 
-  const handleOpenAdminMenu = (admin: TipeAdmin) => {
-    setSelectedAdmin(admin);
+  const handleOpenAdminMenu = (
+    admin: TipeAdmin,
+    event: React.MouseEvent<HTMLButtonElement>,
+  ) => {
+    const rect = event.currentTarget.getBoundingClientRect();
+    setMobileMenuPosition({
+      top: rect.bottom + 8,
+      right: window.innerWidth - rect.right,
+    });
+    setSelectedAdminForMenu(admin);
+    setShowMobileMenu(true);
   };
 
   const handleCloseAdminMenu = () => {
-    setSelectedAdmin(null);
+    setShowMobileMenu(false);
   };
 
-  const handleDelete = async () => {
-    if (!selectedAdmin) return;
-    await hapusAdmin.mutateAsync(selectedAdmin.id);
-    setShowDeleteModal(false);
-    setSelectedAdmin(null);
+  const handleOpenUbahStatus = (admin: TipeAdmin) => {
+    setSelectedAdminForStatus(admin);
+    setShowUbahStatusModal(true);
+    handleCloseAdminMenu();
   };
 
-  const handleUpdateStatus = async () => {
+  const handleCloseUbahStatus = () => {
+    setShowUbahStatusModal(false);
+    setSelectedAdminForStatus(null);
+  };
+
+  const handleAdminDeletePermanently = async () => {
     if (!selectedAdmin) return;
-    await updateStatus.mutateAsync({
-      id: selectedAdmin.id,
-      status: selectedStatus,
-    });
-    setShowProfileModal(false);
-    setSelectedAdmin(null);
+
+    try {
+      await hapusAdminPermanen.mutateAsync(selectedAdmin.id);
+      setShowDeleteModal(false);
+      setSelectedAdmin(null);
+      setSelectedAdminForMenu(null);
+      setShowMobileMenu(false);
+    } catch (error) {
+      console.error("Gagal menghapus Admin:", error);
+    }
   };
 
   const onSubmit = async (data: TipeForm) => {
-    await buatAdminMobile.mutateAsync(data);
+    await buatAdminBaru.mutateAsync(data);
     reset();
+    setIsNewAdminOpen(false);
     setMobileNewAdminVisible(false);
   };
 
@@ -191,38 +215,6 @@ const ManajemenAdmin = () => {
         {label}
       </span>
     );
-  };
-
-  const getStatusOptions = (currentStatus: string) => {
-    if (currentStatus === "DIBLOKIR") {
-      return [{ value: "DIBLOKIR", label: "Diblokir (Tidak dapat diubah)" }];
-    }
-
-    const options = [
-      { value: "AKTIF", label: "Aktif" },
-      { value: "NONAKTIF", label: "Nonaktif (Cuti)" },
-    ];
-
-    if (currentStatus !== "DIBLOKIR") {
-      options.push({ value: "DIBLOKIR", label: "Diblokir (Pecat)" });
-    }
-
-    return options;
-  };
-
-  const getAdminGender = (gender?: JenisKelamin) => {
-    const config = {
-      LAINNYA: "Lainnya",
-      PRIA: "Pria",
-      WANITA: "Wanita",
-    };
-    return gender ? config[gender] : "Tidak Diketahui";
-  };
-
-  const handleRowClick = (admin: TipeAdmin) => {
-    setSelectedAdmin(admin);
-    setSelectedStatus(admin.statusAkun);
-    setShowProfileModal(true);
   };
 
   if (isLoading) {
@@ -396,21 +388,15 @@ const ManajemenAdmin = () => {
                     <th className="text-center font-mona text-base-content">
                       Status Keaktifan
                     </th>
+                    <th className="text-center font-mona text-base-content">
+                      Opsi
+                    </th>
                   </tr>
                 </thead>
                 <tbody>
                   {adminList.map((admin) => (
                     <tr
                       key={admin.id}
-                      onClick={() => handleRowClick(admin)}
-                      tabIndex={0}
-                      role="button"
-                      onKeyDown={(e) => {
-                        if (e.key === "Enter" || e.key === " ") {
-                          e.preventDefault();
-                          handleRowClick(admin);
-                        }
-                      }}
                       className="hover:bg-neutral/5 transition cursor-pointer rounded-lg"
                     >
                       <td className="rounded-l-lg">
@@ -469,9 +455,46 @@ const ManajemenAdmin = () => {
                           {formatTanggal(admin.dibuatPada) || "Tidak Diketahui"}
                         </div>
                       </td>
-                      <td className="rounded-r-lg">
+                      <td>
                         <div className="flex items-center justify-center">
                           <span>{getStatusBadge(admin.statusAkun)}</span>
+                        </div>
+                      </td>
+                      <td className="rounded-r-lg">
+                        <div className="flex items-center justify-center shrink-0">
+                          <button
+                            type="button"
+                            className="bg-transparent p-2 flex items-center justify-center rounded-full cursor-pointer hover:bg-neutral/10 transition-color"
+                          >
+                            <Eye className="w-5 h-5" />
+                          </button>
+                          {admin.statusAkun !== "DIBLOKIR" && (
+                            <button
+                              type="button"
+                              onClick={() => {
+                                if (!admin.propertiDikelola) {
+                                  handleOpenUbahStatus(admin);
+                                }
+                              }}
+                              disabled={!!admin.propertiDikelola}
+                              className={`bg-transparent p-2 flex items-center justify-center rounded-full transition-color ${admin.propertiDikelola ? "cursor-not-allowed opacity-40" : "cursor-pointer hover:bg-neutral/10"}`}
+                            >
+                              <Activity className="w-5 h-5" />
+                            </button>
+                          )}
+                          <button
+                            type="button"
+                            onClick={() => {
+                              if (!admin.propertiDikelola) {
+                                setSelectedAdmin(admin);
+                                setShowDeleteModal(true);
+                              }
+                            }}
+                            disabled={!!admin.propertiDikelola}
+                            className={`bg-transparent p-2 flex items-center justify-center rounded-full transition-color ${admin.propertiDikelola ? "cursor-not-allowed opacity-40" : "cursor-pointer hover:bg-neutral/10"}`}
+                          >
+                            <Trash2 className="w-5 h-5" />
+                          </button>
                         </div>
                       </td>
                     </tr>
@@ -481,7 +504,7 @@ const ManajemenAdmin = () => {
             </div>
 
             {/* Admin List - Mobile */}
-            <div className="flex lg:hidden flex-col bg-base-100 rounded-lg border border-base-content/10 p-4">
+            <div className="flex lg:hidden flex-col bg-base-100 rounded-lg border border-base-content/10 p-4 mb-20">
               <div className="flex items-center justify-between mb-6">
                 <h3 className="text-base font-poppins font-extrabold text-base-content">
                   Semua Admin
@@ -535,7 +558,7 @@ const ManajemenAdmin = () => {
                       </span>
                       <button
                         type="button"
-                        onClick={() => handleOpenAdminMenu(admin)}
+                        onClick={(e) => handleOpenAdminMenu(admin, e)}
                         className="bg-transparent p-2 flex items-center justify-center outline-none border-none rounded-full cursor-pointer shrink-0"
                       >
                         <EllipsisVertical className="w-5 h-5" />
@@ -547,275 +570,303 @@ const ManajemenAdmin = () => {
             </div>
 
             {/* Admin Menu - Mobile */}
-            {selectedAdmin && (
-              <div
-                className="fixed inset-0 z-50 bg-black/30"
-                onClick={handleCloseAdminMenu}
-              >
-                <div className="absolute right-11 top-1/2 translate-y-16 w-4 h-4 bg-base-100 rotate-45 duration-200" />
+            <div className="flex lg:hidden">
+              {showMobileMenu && selectedAdminForMenu && mobileMenuPosition && (
                 <div
-                  className="absolute right-4 top-1/2 translate-y-18 w-46 bg-base-100 rounded-lg shadow-xl overflow-hidden duration-200"
-                  onClick={(e) => e.stopPropagation()}
+                  className="fixed inset-0 z-60 bg-black/30"
+                  onClick={handleCloseAdminMenu}
                 >
-                  <div className="p-2">
-                    <button
-                      type="button"
-                      onClick={() => {
-                        console.log("Lihat Detail:", selectedAdmin);
+                  <div
+                    className="absolute w-4 h-4 bg-base-100 rotate-45 duration-200"
+                    style={{
+                      top: mobileMenuPosition.top - 8,
+                      right: mobileMenuPosition.right + 12,
+                    }}
+                  />
+                  <div
+                    className="absolute w-46 bg-base-100 rounded-lg shadow-xl overflow-hidden duration-200"
+                    style={{
+                      top: mobileMenuPosition.top,
+                      right: mobileMenuPosition.right,
+                    }}
+                    onClick={(e) => e.stopPropagation()}
+                  >
+                    <div className="p-2">
+                      <button
+                        type="button"
+                        onClick={() => {
+                          console.log("Lihat Detail:", selectedAdmin);
 
-                        handleCloseAdminMenu();
-                      }}
-                      className="w-full flex items-center gap-3 px-3 py-2 rounded-md text-sm font-medium text-base-content hover:bg-base-content/10 transition-colors cursor-pointer"
-                    >
-                      <Eye className="w-4 h-4 shrink-0 text-base-content/70" />
+                          handleCloseAdminMenu();
+                        }}
+                        className="w-full flex items-center gap-3 px-3 py-2 rounded-md text-sm font-medium text-base-content hover:bg-base-content/10 transition-colors cursor-pointer"
+                      >
+                        <Eye className="w-4 h-4 shrink-0 text-base-content/70" />
+                        <span>Lihat Detail</span>
+                      </button>
 
-                      <span>Lihat Detail</span>
-                    </button>
+                      <button
+                        type="button"
+                        onClick={() => {
+                          if (
+                            selectedAdminForMenu.statusAkun !== "DIBLOKIR" &&
+                            !selectedAdminForMenu.propertiDikelola
+                          ) {
+                            handleOpenUbahStatus(selectedAdminForMenu);
+                          }
+                        }}
+                        disabled={
+                          selectedAdminForMenu.statusAkun === "DIBLOKIR" ||
+                          !!selectedAdminForMenu.propertiDikelola
+                        }
+                        className={`w-full flex items-center justify-between px-3 py-2 rounded-md text-sm font-medium transition-colors ${selectedAdminForMenu.statusAkun === "DIBLOKIR" || selectedAdminForMenu.propertiDikelola ? "text-base-content/40 cursor-not-allowed" : "text-base-content hover:bg-base-content/10 cursor-pointer"}`}
+                      >
+                        <div className="flex items-center gap-3">
+                          <Activity className="w-4 h-4 shrink-0 text-base-content/70" />
+                          <span>Ubah Status</span>
+                        </div>
+                        {(selectedAdminForMenu.statusAkun === "DIBLOKIR" ||
+                          selectedAdminForMenu.propertiDikelola) && (
+                          <Lock className="w-3 h-3 shrink-0 text-secondary/60" />
+                        )}
+                      </button>
+                    </div>
 
-                    <button
-                      type="button"
-                      onClick={() => {
-                        console.log("Ubah Status:", selectedAdmin);
+                    <div className="border-t border-base-content/10" />
 
-                        handleCloseAdminMenu();
-                      }}
-                      className="w-full flex items-center gap-3 px-3 py-2 rounded-md text-sm font-medium text-base-content hover:bg-base-content/10 transition-colors cursor-pointer"
-                    >
-                      <Pencil className="w-4 h-4 shrink-0 text-base-content/70" />
-
-                      <span>Ubah Status</span>
-                    </button>
-                  </div>
-
-                  <div className="border-t border-base-content/10" />
-
-                  <div className="p-2">
-                    <button
-                      type="button"
-                      onClick={() => {
-                        console.log("Hapus Admin:", selectedAdmin);
-
-                        handleCloseAdminMenu();
-                      }}
-                      className="w-full flex items-center gap-3 px-3 py-2 rounded-md text-sm font-medium text-error hover:bg-error/10 transition-colors cursor-pointer"
-                    >
-                      <Trash2 className="w-4 h-4 shrink-0" />
-
-                      <span>Hapus Admin</span>
-                    </button>
+                    <div className="p-2">
+                      <button
+                        type="button"
+                        onClick={() => {
+                          if (!selectedAdminForMenu.propertiDikelola) {
+                            setSelectedAdmin(selectedAdminForMenu);
+                            setShowDeleteModal(true);
+                            setShowMobileMenu(false);
+                          }
+                        }}
+                        disabled={!!selectedAdminForMenu.propertiDikelola}
+                        className={`w-full flex items-center justify-between px-3 py-2 rounded-md text-sm font-medium transition-colors ${selectedAdminForMenu.propertiDikelola ? "text-error/40 cursor-not-allowed" : "text-error hover:bg-error/10 cursor-pointer"}`}
+                      >
+                        <div className="flex items-center gap-3">
+                          <Trash2 className="w-4 h-4 shrink-0 text-error/70" />
+                          <span>Hapus Admin</span>
+                        </div>
+                        {selectedAdminForMenu.propertiDikelola && (
+                          <Lock className="w-3 h-3 shrink-0 text-secondary/60" />
+                        )}
+                      </button>
+                    </div>
                   </div>
                 </div>
-              </div>
-            )}
+              )}
+            </div>
           </>
         )}
 
-        {/* Admin Selected Profile Modal - Desktop */}
-        {showProfileModal && selectedAdmin && (
-          <AnimatePresence>
+        {/* Add New Admin - Desktop */}
+        <AnimatePresence>
+          {isNewAdminOpen && (
             <motion.div
-              className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm"
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
               exit={{ opacity: 0 }}
-              onClick={() => setShowProfileModal(false)}
+              onClick={() => setIsNewAdminOpen(false)}
+              className="fixed inset-0 z-100 flex items-center justify-center bg-black/40 backdrop-blur-sm"
             >
               <motion.div
-                className="w-full max-w-3xl p-3 rounded-3xl bg-base-100 shadow-2xl overflow-hidden"
                 initial={{ scale: 0.8, y: 50, opacity: 0 }}
                 animate={{ scale: 1, y: 0, opacity: 1 }}
                 exit={{ scale: 0.8, y: 50, opacity: 0 }}
                 transition={{ type: "spring", stiffness: 120 }}
                 onClick={(e) => e.stopPropagation()}
+                className="w-220 p-6 rounded-2xl bg-base-100 border-3 border-base-content/40 shadow-2xl overflow-hidden"
               >
-                <div className="relative">
-                  <div className="h-32 md:h-40 rounded-2xl bg-base-200 w-full">
+                <div className="flex items-center justify-between pb-6 border-b border-secondary/60">
+                  <div className="flex items-center gap-6">
                     <img
-                      src={profileBanner}
-                      alt="profile banner"
-                      className="w-full h-full rounded-2xl object-cover opacity-85"
+                      src={addNewAdminIcon}
+                      alt="add admin"
+                      className="w-7 h-7"
                     />
-                    <button
-                      type="button"
-                      onClick={() => setShowProfileModal(false)}
-                      className="absolute top-3 right-3 btn btn-circle bg-base-100/10 border-none outline-none backdrop-blur-xs hover:opacity-80"
+                    <h4 className="font-lobster text-base-content font-bold text-2xl">
+                      Tambah Admin
+                    </h4>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => setIsNewAdminOpen(false)}
+                    className="btn btn-circle btn-ghost"
+                  >
+                    <X
+                      className="w-6 h-6 text-base-content"
                       aria-label="Tutup"
-                    >
-                      <X className="w-4 md:w-6 text-white" />
-                    </button>
-                  </div>
-                  <div className="absolute -bottom-15 left-5">
-                    <div className="flex items-end justify-center gap-4">
-                      <div className="w-30 h-30 rounded-full border-4 border-base-100 overflow-hidden">
-                        <img
-                          src={selectedAdmin.fotoProfil || emptyProfile}
-                          alt={selectedAdmin.namaLengkap || "Admin"}
-                          className="w-full h-full object-cover"
-                        />
-                      </div>
-                      <div className="flex items-center justify-center gap-x-3 mb-2">
-                        <span className="py-1.5 px-3 text-center rounded-lg font-semibold border border-neutral bg-neutral/10 text-neutral">
-                          Admin
-                        </span>
-                        <span>{getStatusBadge(selectedAdmin.statusAkun)}</span>
-                      </div>
-                    </div>
-                  </div>
+                    />
+                  </button>
                 </div>
-                <div className="mt-14 py-4 px-6 space-y-4">
-                  <div>
-                    <h3 className="text-xl font-bold font-poppins text-base-content">
-                      {selectedAdmin.namaLengkap}
-                    </h3>
-                    <p className="text-sm font-semibold text-base-content/70 font-mona">
-                      {selectedAdmin.email}
-                    </p>
+
+                <form
+                  onSubmit={handleSubmit(onSubmit)}
+                  className="mt-6 grid grid-cols-1 md:grid-cols-2 gap-4 md:gap-8"
+                >
+                  <div className="form-control">
+                    <Controller
+                      name="namaLengkap"
+                      control={control}
+                      render={({ field }) => (
+                        <FloatingInput
+                          label="Nama Lengkap"
+                          name={field.name}
+                          type="text"
+                          icon={usernameIcon}
+                          value={field.value}
+                          onChange={(e) => {
+                            if (
+                              "target" in e &&
+                              typeof e.target.value === "string"
+                            ) {
+                              field.onChange(e.target.value);
+                            }
+                          }}
+                        />
+                      )}
+                    />
+                    {errors.namaLengkap && (
+                      <label className="label">
+                        <span className="label-text-alt text-error">
+                          {errors.namaLengkap.message}
+                        </span>
+                      </label>
+                    )}
                   </div>
-
-                  <div className="grid grid-cols-[2fr_1fr] gap-4">
-                    <div className="flex flex-col justify-center gap-4">
-                      <div className="grid grid-cols-2 gap-4">
-                        <div>
-                          <p className="text-xs font-semibold text-base-content/60 font-mona">
-                            Bergabung Pada
-                          </p>
-                          <p className="text-sm font-semibold text-base-content font-mona mt-1">
-                            {formatTanggal(selectedAdmin.dibuatPada) ||
-                              "Tidak Diketahui"}
-                          </p>
-                        </div>
-                        <div>
-                          <p className="text-xs font-semibold text-base-content/60 font-mona">
-                            Nomor Telepon
-                          </p>
-                          <p className="text-sm font-semibold text-base-content font-mona mt-1">
-                            {selectedAdmin.nomorTelepon}
-                          </p>
-                        </div>
-                      </div>
-                      <div className="grid grid-cols-2 gap-4">
-                        <div>
-                          <p className="text-xs font-semibold text-base-content/60 font-mona">
-                            Jenis Kelamin
-                          </p>
-                          <p className="text-sm font-semibold text-base-content font-mona mt-1">
-                            {getAdminGender(selectedAdmin.jenisKelamin)}
-                          </p>
-                        </div>
-                        <div>
-                          <p className="text-xs font-semibold text-base-content/60 font-mona">
-                            Tanggung Jawab
-                          </p>
-                          {selectedAdmin.propertiDikelola ? (
-                            <p className="text-sm font-semibold text-base-content font-mona mt-1">
-                              {selectedAdmin.propertiDikelola.nama}
-                            </p>
-                          ) : (
-                            <p className="text-sm font-semibold text-base-content font-mona mt-1">
-                              Tersedia
-                            </p>
-                          )}
-                        </div>
-                      </div>
-                    </div>
-
-                    <div className="form-control">
-                      <span className="text-xs font-semibold text-base-content/60 font-mona">
-                        Status Akun
-                      </span>
-                      <select
-                        defaultValue="Small"
-                        className="select font-semibold text-base-content/60 font-mona select-sm border-none mt-2 cursor-pointer"
-                        value={selectedStatus}
-                        onChange={(e) =>
-                          setSelectedStatus(
-                            e.target.value as "AKTIF" | "NONAKTIF" | "DIBLOKIR",
-                          )
-                        }
-                      >
-                        {getStatusOptions(selectedAdmin.statusAkun).map(
-                          (opt) => (
-                            <option
-                              key={opt.value}
-                              value={opt.value}
-                              className="font-semibold text-base-content/60 font-mona"
-                            >
-                              {opt.label}
-                            </option>
-                          ),
-                        )}
-                      </select>
-                    </div>
+                  <div className="form-control">
+                    <Controller
+                      name="email"
+                      control={control}
+                      render={({ field }) => (
+                        <FloatingInput
+                          label="Email"
+                          name={field.name}
+                          type="email"
+                          icon={emailAddressIcon}
+                          value={field.value}
+                          onChange={(e) => {
+                            if (
+                              "target" in e &&
+                              typeof e.target.value === "string"
+                            ) {
+                              field.onChange(e.target.value);
+                            }
+                          }}
+                        />
+                      )}
+                    />
+                    {errors.email && (
+                      <label className="label">
+                        <span className="label-text-alt text-error">
+                          {errors.email.message}
+                        </span>
+                      </label>
+                    )}
                   </div>
-
-                  <div className="flex gap-3 mt-3 pt-4 border-t border-base-content/20">
+                  <div className="form-control">
+                    <Controller
+                      name="kataSandi"
+                      control={control}
+                      render={({ field }) => (
+                        <FloatingInput
+                          label="Password"
+                          name={field.name}
+                          type="password"
+                          icon={passwordIcon}
+                          value={field.value}
+                          onChange={(e) => {
+                            if (
+                              "target" in e &&
+                              typeof e.target.value === "string"
+                            ) {
+                              field.onChange(e.target.value);
+                            }
+                          }}
+                        />
+                      )}
+                    />
+                    {errors.kataSandi && (
+                      <label className="label">
+                        <span className="label-text-alt text-error">
+                          {errors.kataSandi.message}
+                        </span>
+                      </label>
+                    )}
+                  </div>
+                  <div className="form-control">
+                    <Controller
+                      name="nomorTelepon"
+                      control={control}
+                      render={({ field }) => (
+                        <FloatingInput
+                          label="Nomor Telepon"
+                          name={field.name}
+                          type="tel"
+                          icon={phoneNumberIcon}
+                          value={field.value}
+                          onChange={(e) => {
+                            if (
+                              "target" in e &&
+                              typeof e.target.value === "string"
+                            ) {
+                              field.onChange(e.target.value);
+                            }
+                          }}
+                        />
+                      )}
+                    />
+                    {errors.nomorTelepon && (
+                      <label className="label">
+                        <span className="label-text-alt text-error">
+                          {errors.nomorTelepon.message}
+                        </span>
+                      </label>
+                    )}
+                  </div>
+                  <div className="md:col-span-2 mb-6">
                     <button
-                      onClick={() => {
-                        setShowProfileModal(false);
-                        setSelectedAdmin(selectedAdmin);
-                        setShowDeleteModal(true);
-                      }}
-                      className="flex-1 btn border border-error bg-error/10 text-error rounded-lg font-semibold font-mona hover:bg-error/30"
-                      disabled={!!selectedAdmin.propertiDikelola}
-                      title={
-                        selectedAdmin.propertiDikelola
-                          ? "Admin Sibuk"
-                          : "Hapus Admin"
-                      }
+                      type="submit"
+                      className="btn bg-base-content py-6 font-poppins hover:bg-neutral w-full rounded-lg text-base-100 font-semibold"
+                      disabled={buatAdminBaru.isPending}
                     >
-                      {selectedAdmin.propertiDikelola
-                        ? "Tidak Dapat Dihapus"
-                        : "Hapus Admin"}
-                    </button>
-                    <button
-                      className="flex-1 btn border border-neutral/0 bg-neutral text-base-100 rounded-lg font-semibold font-mona hover:bg-base-content"
-                      onClick={handleUpdateStatus}
-                      disabled={
-                        updateStatus.isPending ||
-                        !!selectedAdmin.propertiDikelola
-                      }
-                    >
-                      {updateStatus.isPending ? (
+                      {buatAdminBaru.isPending ? (
                         <span className="loading loading-bars" />
                       ) : (
-                        "Simpan"
+                        "Tambah"
                       )}
                     </button>
                   </div>
-                </div>
+                </form>
               </motion.div>
             </motion.div>
-          </AnimatePresence>
-        )}
+          )}
+        </AnimatePresence>
 
         {/* Add New Admin - Mobile */}
-        {mobileNewAdminVisible && (
-          <AnimatePresence mode="wait">
+        <AnimatePresence>
+          {mobileNewAdminVisible && (
             <motion.div
-              key="overlay"
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
               exit={{ opacity: 0 }}
-              transition={{ duration: 0.3, ease: "easeInOut", type: "tween" }}
+              transition={{ duration: 0.3, ease: "easeInOut" }}
               onClick={() => setMobileNewAdminVisible(false)}
               className="fixed inset-0 z-100 bg-black/60 backdrop-blur-sm"
-              style={{
-                willChange: "opacity",
-                WebkitBackfaceVisibility: "hidden",
-                backfaceVisibility: "hidden",
-              }}
             >
               <motion.div
-                key="content"
                 initial={{ y: "100%" }}
                 animate={{ y: 0 }}
                 exit={{ y: "100%" }}
                 transition={{
-                  duration: 0.4,
+                  duration: 0.45,
                   ease: [0.32, 0.72, 0, 1],
-                  type: "tween",
                 }}
-                className="fixed flex h-auto flex-col inset-x-0 bottom-0 z-40 bg-base-100 rounded-t-4xl"
+                className="fixed inset-x-0 bottom-0 z-120 h-auto bg-base-100 rounded-t-4xl"
                 onClick={(e) => e.stopPropagation()}
                 style={{
                   maxHeight: Math.min(viewportHeight * 0.9, 800),
@@ -843,7 +894,7 @@ const ManajemenAdmin = () => {
                       <div className="flex justify-between items-center">
                         <div className="flex items-center gap-3">
                           <img
-                            src={addNewAdminMobileIcon}
+                            src={addNewAdminIcon}
                             alt="add admin"
                             className="w-7 h-7 object-cover"
                           />
@@ -901,7 +952,7 @@ const ManajemenAdmin = () => {
                                 placeholder="Masukkan nama"
                                 className="flex-1 ml-3 py-3 font-medium text-sm placeholder:text-sm font-mona bg-transparent outline-none text-neutral/70 placeholder:text-neutral/40"
                                 {...register("namaLengkap")}
-                                disabled={buatAdminMobile.isPending}
+                                disabled={buatAdminBaru.isPending}
                               />
                             </div>
                             {errors.namaLengkap && (
@@ -928,16 +979,14 @@ const ManajemenAdmin = () => {
                                 placeholder="Masukkan alamat email"
                                 className="flex-1 ml-3 py-3 font-medium text-sm placeholder:text-sm font-mona bg-transparent outline-none text-neutral/70 placeholder:text-neutral/40"
                                 {...register("email")}
-                                disabled={buatAdminMobile.isPending}
+                                disabled={buatAdminBaru.isPending}
                               />
-                              {errors.email && (
-                                <label className="label">
-                                  <span className="label-text-alt text-error">
-                                    {errors.email.message}
-                                  </span>
-                                </label>
-                              )}
                             </div>
+                            {errors.email && (
+                              <span className="label-text-alt text-error mt-1">
+                                {errors.email.message}
+                              </span>
+                            )}
                           </div>
                           <div className="form-control">
                             <label className="label items-start text-sm mb-2">
@@ -957,16 +1006,14 @@ const ManajemenAdmin = () => {
                                 placeholder="Masukkan kata sandi"
                                 className="flex-1 ml-3 py-3 font-medium text-sm placeholder:text-sm font-mona bg-transparent outline-none text-neutral/70 placeholder:text-neutral/40"
                                 {...register("kataSandi")}
-                                disabled={buatAdminMobile.isPending}
+                                disabled={buatAdminBaru.isPending}
                               />
-                              {errors.kataSandi && (
-                                <label className="label">
-                                  <span className="label-text-alt text-error">
-                                    {errors.kataSandi.message}
-                                  </span>
-                                </label>
-                              )}
                             </div>
+                            {errors.kataSandi && (
+                              <span className="label-text-alt text-error mt-1">
+                                {errors.kataSandi.message}
+                              </span>
+                            )}
                           </div>
                           <div className="form-control">
                             <label className="label items-start text-sm mb-2">
@@ -986,16 +1033,14 @@ const ManajemenAdmin = () => {
                                 placeholder="Masukkan nomor telepon"
                                 className="flex-1 ml-3 py-3 font-medium text-sm placeholder:text-sm font-mona bg-transparent outline-none text-neutral/70 placeholder:text-neutral/40"
                                 {...register("nomorTelepon")}
-                                disabled={buatAdminMobile.isPending}
+                                disabled={buatAdminBaru.isPending}
                               />
-                              {errors.nomorTelepon && (
-                                <label className="label">
-                                  <span className="label-text-alt text-error">
-                                    {errors.nomorTelepon.message}
-                                  </span>
-                                </label>
-                              )}
                             </div>
+                            {errors.nomorTelepon && (
+                              <span className="label-text-alt text-error mt-1">
+                                {errors.nomorTelepon.message}
+                              </span>
+                            )}
                           </div>
                         </div>
                       </div>
@@ -1012,16 +1057,16 @@ const ManajemenAdmin = () => {
                           type="button"
                           className="btn border border-base-content rounded-lg"
                           onClick={() => setMobileNewAdminVisible(false)}
-                          disabled={buatAdminMobile.isPending}
+                          disabled={buatAdminBaru.isPending}
                         >
                           Batal
                         </button>
                         <button
                           type="submit"
                           className="btn bg-base-content text-base-100 rounded-lg"
-                          disabled={buatAdminMobile.isPending}
+                          disabled={buatAdminBaru.isPending}
                         >
-                          {buatAdminMobile.isPending ? (
+                          {buatAdminBaru.isPending ? (
                             <span className="loading loading-bars" />
                           ) : (
                             "Tambah"
@@ -1033,42 +1078,52 @@ const ManajemenAdmin = () => {
                 </div>
               </motion.div>
             </motion.div>
-          </AnimatePresence>
-        )}
+          )}
+        </AnimatePresence>
 
-        {/* Selected Admin Delete Modal - Desktop */}
+        {/* Selected Admin Delete Modal - All Device */}
         {showDeleteModal && selectedAdmin && (
           <dialog
             className="modal modal-open"
             onClick={(e) => {
-              if (e.target === e.currentTarget) setShowDeleteModal(false);
+              if (e.target === e.currentTarget) {
+                setShowDeleteModal(false);
+                setSelectedAdmin(null);
+              }
             }}
           >
-            <div className="modal-box">
-              <h3 className="font-bold font-poppins text-lg text-error">
-                Hapus Admin
+            <div className="modal-box flex flex-col items-center gap-3">
+              <div className="w-32 h-32 shrink-0 rounded-full overflow-hidden">
+                <img
+                  src={selectedAdmin?.fotoProfil || emptyProfile}
+                  alt="Foto Admin"
+                  className="w-full h-full object-cover"
+                />
+              </div>
+              <h3 className="font-bold font-poppins text-lg mt-2">
+                {selectedAdmin.namaLengkap}
               </h3>
-              <p className="py-4 font-medium">
-                Apakah Anda yakin ingin menghapus Admin{" "}
-                <strong>
-                  "{selectedAdmin.namaLengkap || selectedAdmin.email}"
-                </strong>
-                dari <strong>Nusa Residence</strong>?
+              <p className="font-medium text-center text-base-content/60 text-sm lg:text-base">
+                Apakah Anda yakin ingin menghapus {selectedAdmin.namaLengkap}{" "}
+                dari daftar Admin Nusa Residence?
               </p>
-              <div className="modal-action">
+              <div className="w-full mt-4 lg:mt-5 grid grid-cols-2 justify-center gap-3">
                 <button
                   className="btn rounded-lg font-semibold"
-                  onClick={() => setShowDeleteModal(false)}
-                  disabled={hapusAdmin.isPending}
+                  onClick={() => {
+                    setShowDeleteModal(false);
+                    setSelectedAdmin(null);
+                  }}
+                  disabled={hapusAdminPermanen.isPending}
                 >
                   Batal
                 </button>
                 <button
-                  className="btn btn-error rounded-lg font-semibold text-base-100"
-                  onClick={handleDelete}
-                  disabled={hapusAdmin.isPending}
+                  className="btn btn-neutral rounded-lg font-semibold text-base-100"
+                  onClick={handleAdminDeletePermanently}
+                  disabled={hapusAdminPermanen.isPending}
                 >
-                  {hapusAdmin.isPending ? (
+                  {hapusAdminPermanen.isPending ? (
                     <span className="loading loading-bars text-base-content" />
                   ) : (
                     "Hapus"
@@ -1080,10 +1135,10 @@ const ManajemenAdmin = () => {
         )}
       </div>
 
-      {/* Add New Admin Modal - Desktop */}
-      <AdminBaruModal
-        isOpen={isNewAdminOpen}
-        onClose={() => setIsNewAdminOpen(false)}
+      <UbahStatusAdminModal
+        isOpen={showUbahStatusModal}
+        admin={selectedAdminForStatus}
+        onClose={handleCloseUbahStatus}
       />
     </>
   );

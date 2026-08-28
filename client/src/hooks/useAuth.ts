@@ -39,8 +39,6 @@ export const useAuth = () => {
             id: response.data.id,
             email: response.data.email,
             namaLengkap: response.data.namaLengkap,
-            nomorTelepon: response.data.nomorTelepon || null,
-            jenisKelamin: response.data.jenisKelamin,
             fotoProfil: response.data.fotoProfil || null,
             peran: response.data.peran,
           }),

@@ -17,17 +17,17 @@ export const getAdminOwner = async (): Promise<{
   return response.data;
 };
 
-export const pecatAdmin = async (
-  id: string,
-): Promise<{ sukses: boolean; pesan?: string }> => {
-  const response = await api.delete(`/admin/${id}`);
-  return response.data;
-};
-
 export const updateStatusAdmin = async (
   id: string,
   status: "AKTIF" | "NONAKTIF" | "DIBLOKIR",
 ): Promise<{ sukses: boolean; data?: TipeAdmin; pesan?: string }> => {
   const response = await api.patch(`/admin/${id}/status`, { status });
+  return response.data;
+};
+
+export const hapusAdminPermanen = async (
+  id: string,
+): Promise<{ sukses: boolean; pesan?: string }> => {
+  const response = await api.delete(`/admin/${id}`);
   return response.data;
 };
