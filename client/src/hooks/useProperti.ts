@@ -36,7 +36,7 @@ export const useOwnerProperty = () => {
 
 export const useAdminAvailable = () => {
   return useQuery({
-    queryKey: queryKeys.admin.lists(),
+    queryKey: queryKeys.properti.adminAvailable(),
     queryFn: async () => {
       const response = await getAdminTersedia();
       if (!response.sukses) {
@@ -44,7 +44,7 @@ export const useAdminAvailable = () => {
       }
       return response.data || [];
     },
-    staleTime: 2 * 60 * 1000,
+    staleTime: 1 * 60 * 1000,
   });
 };
 
@@ -57,6 +57,9 @@ export const useCreateProperty = () => {
       if (response.sukses) {
         toast.success(response.pesan || "Properti berhasil dibuat!");
         queryClient.invalidateQueries({ queryKey: queryKeys.properti.lists() });
+        queryClient.invalidateQueries({
+          queryKey: queryKeys.properti.adminAvailable(),
+        });
         queryClient.invalidateQueries({ queryKey: queryKeys.admin.lists() });
       } else {
         toast.error(response.pesan || "Gagal membuat properti.");

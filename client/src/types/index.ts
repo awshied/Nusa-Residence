@@ -152,6 +152,9 @@ export type TipeAdminTersedia = {
   email: string;
   namaLengkap?: string;
   nomorTelepon?: string;
+  fotoProfil?: string | null;
+  statusAkun: StatusAkun;
+  dibuatPada: string;
 };
 
 export type TipeProperti = {
@@ -210,3 +213,5 @@ export type DataBuatProperti = {
   adminId: string;
   gambar?: File[];
 };
+
+export type TipeFormProperti = Omit<DataBuatProperti, "gambar">;

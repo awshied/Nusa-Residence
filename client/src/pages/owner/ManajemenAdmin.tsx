@@ -1,7 +1,9 @@
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { AnimatePresence, motion } from "framer-motion";
 import {
   Activity,
+  ChevronLeft,
+  ChevronRight,
   EllipsisVertical,
   Eye,
   Filter,
@@ -25,9 +27,12 @@ import {
 } from "@/hooks/useAdmin";
 import { formatTanggal } from "@/lib/formatTanggal";
 
+import type { AdminFilterOptions } from "@/components/layout/AdminFilter";
 import Loading from "@/components/layout/Loading";
+import AdminFilter from "@/components/layout/AdminFilter";
 import StatisticCard from "@/components/layout/StatisticCard";
 import FloatingInput from "@/components/layout/FloatingInput";
+import AdminDetail from "@/components/layout/AdminDetail";
 import UbahStatusAdminModal from "@/components/layout/UbahStatusAdminModal";
 import emptyAdmin from "@/assets/empty-admin.png";
 import emptyProfile from "@/assets/empty-profile.png";
@@ -68,6 +73,14 @@ const skemaBuatAdmin = z.object({
 
 type TipeForm = z.infer<typeof skemaBuatAdmin>;
 
+const defaultFilters: AdminFilterOptions = {
+  status: ["AKTIF", "NONAKTIF", "DIBLOKIR"],
+  jenisKelamin: ["PRIA", "WANITA", "LAINNYA"],
+  tanggungJawab: "SEMUA",
+  urutanDibuat: "TERBARU",
+  urutanNama: "A_Z",
+};
+
 const ManajemenAdmin = () => {
   const {
     control,
@@ -87,6 +100,9 @@ const ManajemenAdmin = () => {
 
   const [isNewAdminOpen, setIsNewAdminOpen] = useState(false);
   const [mobileNewAdminVisible, setMobileNewAdminVisible] = useState(false);
+  const [searchQuery, setSearchQuery] = useState("");
+  const [showFilterModal, setShowFilterModal] = useState(false);
+  const [filters, setFilters] = useState<AdminFilterOptions>(defaultFilters);
   const [selectedAdmin, setSelectedAdmin] = useState<TipeAdmin | null>(null);
   const [showMobileMenu, setShowMobileMenu] = useState(false);
   const [mobileMenuPosition, setMobileMenuPosition] = useState<{
@@ -96,10 +112,16 @@ const ManajemenAdmin = () => {
   const [selectedAdminForMenu, setSelectedAdminForMenu] =
     useState<TipeAdmin | null>(null);
 
+  const [showAdminDetail, setShowAdminDetail] = useState(false);
+  const [selectedAdminDetail, setSelectedAdminDetail] = useState<string | null>(
+    null,
+  );
   const [showUbahStatusModal, setShowUbahStatusModal] = useState(false);
   const [selectedAdminForStatus, setSelectedAdminForStatus] =
     useState<TipeAdmin | null>(null);
   const [showDeleteModal, setShowDeleteModal] = useState(false);
+  const [currentPage, setCurrentPage] = useState(1);
+  const [itemsPerPage] = useState(8);
 
   const [viewportHeight, setViewportHeight] = useState(
     typeof window !== "undefined" ? window.innerHeight : 800,
@@ -109,16 +131,149 @@ const ManajemenAdmin = () => {
   const buatAdminBaru = useCreateNewAdmin();
   const hapusAdminPermanen = useAdminDeletePermanently();
 
-  const adminAktif = adminList.filter(
+  useEffect(() => {
+    const handleResize = () => {
+      setViewportHeight(window.innerHeight);
+    };
+
+    window.addEventListener("resize", handleResize);
+    window.addEventListener("orientationchange", handleResize);
+
+    const handleFocus = () => setTimeout(handleResize, 300);
+    window.addEventListener("focusin", handleFocus);
+    window.addEventListener("focusout", handleFocus);
+
+    return () => {
+      window.removeEventListener("resize", handleResize);
+      window.removeEventListener("orientationchange", handleResize);
+      window.removeEventListener("focusin", handleFocus);
+      window.removeEventListener("focusout", handleFocus);
+    };
+  }, []);
+
+  const applyFilters = (newFilters: AdminFilterOptions) => {
+    setFilters(newFilters);
+    setCurrentPage(1);
+  };
+
+  const resetFilters = () => {
+    setFilters(defaultFilters);
+    setCurrentPage(1);
+  };
+
+  const getActiveFilterCount = () => {
+    let count = 0;
+    if (filters.status.length < 3) count++;
+    if (filters.jenisKelamin.length < 3) count++;
+    if (filters.tanggungJawab !== "SEMUA") count++;
+    if (filters.urutanDibuat !== "TERBARU") count++;
+    if (filters.urutanNama !== "A_Z") count++;
+    return count;
+  };
+
+  const filteredAndSortedAdminList = useMemo(() => {
+    let result = [...adminList];
+
+    if (searchQuery.trim()) {
+      const query = searchQuery.toLowerCase().trim();
+      result = result.filter((admin) => {
+        const nama = (admin.namaLengkap || "").toLowerCase();
+        const email = (admin.email || "").toLowerCase();
+        return nama.includes(query) || email.includes(query);
+      });
+    }
+
+    result = result.filter((admin) =>
+      filters.status.includes(admin.statusAkun),
+    );
+
+    result = result.filter((admin) => {
+      if (!admin.jenisKelamin) return filters.jenisKelamin.includes("LAINNYA");
+      return filters.jenisKelamin.includes(admin.jenisKelamin);
+    });
+
+    if (filters.tanggungJawab === "ADA") {
+      result = result.filter((admin) => admin.propertiDikelola !== null);
+    } else if (filters.tanggungJawab === "TIDAK_ADA") {
+      result = result.filter((admin) => admin.propertiDikelola === null);
+    }
+
+    // if (filters.urutanDibuat === "TERBARU") {
+    //   result.sort(
+    //     (a, b) =>
+    //       new Date(b.dibuatPada).getTime() - new Date(a.dibuatPada).getTime(),
+    //   );
+    // } else {
+    //   result.sort(
+    //     (a, b) =>
+    //       new Date(a.dibuatPada).getTime() - new Date(b.dibuatPada).getTime(),
+    //   );
+    // }
+
+    // if (filters.urutanNama === "A_Z") {
+    //   result.sort((a, b) =>
+    //     (a.namaLengkap || "").localeCompare(b.namaLengkap || ""),
+    //   );
+    // } else {
+    //   result.sort((a, b) =>
+    //     (b.namaLengkap || "").localeCompare(a.namaLengkap || ""),
+    //   );
+    // }
+
+    const dateDir = filters.urutanDibuat === "TERBARU" ? -1 : 1;
+    const nameDir = filters.urutanNama === "A_Z" ? 1 : -1;
+    result.sort((a, b) => {
+      const byDate =
+        new Date(a.dibuatPada).getTime() - new Date(b.dibuatPada).getTime();
+      if (byDate !== 0) return byDate * dateDir;
+      return (a.namaLengkap || "").localeCompare(b.namaLengkap || "") * nameDir;
+    });
+
+    return result;
+  }, [adminList, filters, searchQuery]);
+
+  const adminAktif = filteredAndSortedAdminList.filter(
     (admin) => admin.statusAkun === "AKTIF",
   ).length;
-  const adminCuti = adminList.filter(
+  const adminCuti = filteredAndSortedAdminList.filter(
     (admin) => admin.statusAkun === "NONAKTIF",
   ).length;
-  const adminDipecat = adminList.filter(
+  const adminDipecat = filteredAndSortedAdminList.filter(
     (admin) => admin.statusAkun === "DIBLOKIR",
   ).length;
-  const totalAdmin = adminList.length;
+  const totalAdmin = filteredAndSortedAdminList.length;
+
+  const indexOfLastItem = currentPage * itemsPerPage;
+  const indexOfFirstItem = indexOfLastItem - itemsPerPage;
+  const currentAdminList = filteredAndSortedAdminList.slice(
+    indexOfFirstItem,
+    indexOfLastItem,
+  );
+  const totalPages = Math.ceil(
+    filteredAndSortedAdminList.length / itemsPerPage,
+  );
+
+  const getPageNumbers = () => {
+    const pageNumbers = [];
+    const maxVisiblePages = 5;
+    const startPage = Math.max(
+      1,
+      currentPage - Math.floor(maxVisiblePages / 2),
+    );
+    const endPage = Math.min(totalPages, startPage + maxVisiblePages - 1);
+    const adjustedStartPage = Math.max(1, endPage - maxVisiblePages + 1);
+
+    for (let i = adjustedStartPage; i <= endPage; i++) {
+      pageNumbers.push(i);
+    }
+    return pageNumbers;
+  };
+
+  const pageNumbers = getPageNumbers();
+
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [adminList.length]);
 
   const handleOpenAdminMenu = (
     admin: TipeAdmin,
@@ -135,6 +290,17 @@ const ManajemenAdmin = () => {
 
   const handleCloseAdminMenu = () => {
     setShowMobileMenu(false);
+  };
+
+  const handleOpenAdminDetail = (admin: TipeAdmin) => {
+    setSelectedAdminDetail(admin.id);
+    setShowAdminDetail(true);
+    handleCloseAdminMenu();
+  };
+
+  const handleCloseAdminDetail = () => {
+    setShowAdminDetail(false);
+    setSelectedAdminDetail(null);
   };
 
   const handleOpenUbahStatus = (admin: TipeAdmin) => {
@@ -162,32 +328,20 @@ const ManajemenAdmin = () => {
     }
   };
 
+  const handlePageChange = (page: number) => {
+    setCurrentPage(page);
+    const tableElement = document.getElementById("admin-table");
+    if (tableElement) {
+      tableElement.scrollIntoView({ behavior: "smooth", block: "start" });
+    }
+  };
+
   const onSubmit = async (data: TipeForm) => {
     await buatAdminBaru.mutateAsync(data);
     reset();
     setIsNewAdminOpen(false);
     setMobileNewAdminVisible(false);
   };
-
-  useEffect(() => {
-    const handleResize = () => {
-      setViewportHeight(window.innerHeight);
-    };
-
-    window.addEventListener("resize", handleResize);
-    window.addEventListener("orientationchange", handleResize);
-
-    const handleFocus = () => setTimeout(handleResize, 300);
-    window.addEventListener("focusin", handleFocus);
-    window.addEventListener("focusout", handleFocus);
-
-    return () => {
-      window.removeEventListener("resize", handleResize);
-      window.removeEventListener("orientationchange", handleResize);
-      window.removeEventListener("focusin", handleFocus);
-      window.removeEventListener("focusout", handleFocus);
-    };
-  }, []);
 
   const getStatusBadge = (status: string) => {
     const config = {
@@ -217,6 +371,60 @@ const ManajemenAdmin = () => {
     );
   };
 
+  const renderPagination = () => {
+    if (totalPages <= 1) return null;
+
+    return (
+      <div className="flex items-center justify-center lg:justify-between px-4 py-3 bg-base-100 border-t border-base-content/10 rounded-b-lg mt-4">
+        <div className="hidden lg:flex items-center gap-2">
+          <span className="text-sm font-medium text-base-content/60">
+            Menampilkan {indexOfFirstItem + 1} -{" "}
+            {Math.min(indexOfLastItem, filteredAndSortedAdminList.length)} Admin
+          </span>
+        </div>
+        <div className="flex items-center gap-1">
+          <button
+            onClick={() => handlePageChange(currentPage - 1)}
+            disabled={currentPage === 1}
+            className={`px-3 py-1.5 rounded-lg text-sm font-medium transition-colors ${
+              currentPage === 1
+                ? "text-base-content/30 cursor-not-allowed"
+                : "text-base-content hover:bg-base-content/10 cursor-pointer"
+            }`}
+          >
+            <ChevronLeft className="w-4 h-4" />
+          </button>
+
+          {pageNumbers.map((page) => (
+            <button
+              key={page}
+              onClick={() => handlePageChange(page)}
+              className={`px-3.5 py-1.5 rounded-lg text-sm font-medium transition-colors ${
+                currentPage === page
+                  ? "bg-base-content text-base-100 cursor-default"
+                  : "text-base-content hover:bg-base-content/10 cursor-pointer"
+              }`}
+            >
+              {page}
+            </button>
+          ))}
+
+          <button
+            onClick={() => handlePageChange(currentPage + 1)}
+            disabled={currentPage === totalPages}
+            className={`px-3 py-1.5 rounded-lg text-sm font-medium transition-colors ${
+              currentPage === totalPages
+                ? "text-base-content/30 cursor-not-allowed"
+                : "text-base-content hover:bg-base-content/10 cursor-pointer"
+            }`}
+          >
+            <ChevronRight className="w-4 h-4" />
+          </button>
+        </div>
+      </div>
+    );
+  };
+
   if (isLoading) {
     return <Loading isLoading={isLoading} />;
   }
@@ -232,7 +440,7 @@ const ManajemenAdmin = () => {
             icon={adminManagementIcon}
             trend={{
               value:
-                adminList.length > 0
+                totalAdmin > 0
                   ? Math.round((adminAktif / totalAdmin) * 100)
                   : 0,
               label: "dari total Admin",
@@ -245,9 +453,7 @@ const ManajemenAdmin = () => {
             icon={adminHolidayIcon}
             trend={{
               value:
-                adminList.length > 0
-                  ? Math.round((adminCuti / totalAdmin) * 100)
-                  : 0,
+                totalAdmin > 0 ? Math.round((adminCuti / totalAdmin) * 100) : 0,
               label: "dari total Admin",
               isPositive: false,
             }}
@@ -258,7 +464,7 @@ const ManajemenAdmin = () => {
             icon={adminFiredIcon}
             trend={{
               value:
-                adminList.length > 0
+                totalAdmin > 0
                   ? Math.round((adminDipecat / totalAdmin) * 100)
                   : 0,
               label: "dari total Admin",
@@ -269,8 +475,16 @@ const ManajemenAdmin = () => {
 
         {/* Desktop - Large Size */}
         <div className="hidden lg:flex items-center justify-end gap-2">
-          <button className="flex items-center justify-center gap-2 shrink-0 flex-nowrap rounded-lg py-2.5 px-5 bg-base-100 hover:opacity-80 border border-base-content/30 text-base-content font-semibold font-mona shadow-md cursor-pointer">
+          <button
+            onClick={() => setShowFilterModal(true)}
+            className="flex items-center justify-center gap-2 shrink-0 flex-nowrap rounded-lg py-2.5 px-5 bg-base-100 hover:opacity-80 border border-base-content/30 text-base-content font-semibold font-mona shadow-md cursor-pointer relative"
+          >
             <Filter size={18} /> Filter
+            {getActiveFilterCount() > 0 && (
+              <span className="absolute -top-1 -right-1 w-5 h-5 bg-base-content text-base-100 text-xs font-bold rounded-full flex items-center justify-center">
+                {getActiveFilterCount()}
+              </span>
+            )}
           </button>
           <button
             onClick={() => setIsNewAdminOpen(true)}
@@ -305,16 +519,42 @@ const ManajemenAdmin = () => {
           </div>
 
           <div className="flex items-center justify-center gap-2">
-            <div className="flex-1 bg-base-100 flex items-center rounded-full px-5 shadow-md">
-              <Search size={20} />
+            <div className="relative flex-1 bg-base-100 flex items-center rounded-full px-5 shadow-md">
+              <Search size={20} className="shrink-0" />
               <input
                 type="text"
                 placeholder="Cari Admin..."
+                value={searchQuery}
+                onChange={(e) => {
+                  setSearchQuery(e.target.value);
+                  setCurrentPage(1);
+                }}
                 className="flex-1 ml-3 py-2 font-medium font-mona bg-transparent outline-none text-neutral/70 placeholder:text-neutral/40"
               />
+              {searchQuery && (
+                <button
+                  type="button"
+                  onClick={() => {
+                    setSearchQuery("");
+                    setCurrentPage(1);
+                  }}
+                  className="absolute right-3 p-1 rounded-full hover:bg-base-content/10 transition-colors shrink-0"
+                  aria-label="Hapus pencarian"
+                >
+                  <X className="w-4 h-4 text-base-content/40" />
+                </button>
+              )}
             </div>
-            <button className="btn btn-circle bg-base-100 shadow-md hover:opacity-80">
+            <button
+              onClick={() => setShowFilterModal(true)}
+              className="btn btn-circle bg-base-100 shadow-md hover:opacity-80 relative"
+            >
               <Filter size={20} />
+              {getActiveFilterCount() > 0 && (
+                <span className="absolute -top-1 -right-1 w-5 h-5 bg-base-content text-base-100 text-xs font-bold rounded-full flex items-center justify-center">
+                  {getActiveFilterCount()}
+                </span>
+              )}
             </button>
             <button
               onClick={() => setMobileNewAdminVisible(true)}
@@ -327,8 +567,8 @@ const ManajemenAdmin = () => {
 
         {/* Empty Admin List - All Device */}
         {adminList.length === 0 ? (
-          <div className="card bg-transparent lg:bg-base-100 rounded-lg shadow-none lg:shadow-xl">
-            <div className="card-body items-center justify-center py-24 mx-0 lg:mx-24">
+          <div className="card bg-base-100 rounded-lg shadow-none lg:shadow-xl mb-12 lg:mb-0">
+            <div className="card-body items-center justify-center py-12 lg:py-24 mx-0 lg:mx-24">
               <img
                 src={emptyAdmin}
                 alt="admin not found"
@@ -355,6 +595,45 @@ const ManajemenAdmin = () => {
               </button>
             </div>
           </div>
+        ) : filteredAndSortedAdminList.length === 0 ? (
+          <div className="card bg-transparent lg:bg-base-100 rounded-lg shadow-none lg:shadow-xl mb-12 lg:mb-0">
+            <div className="card-body items-center justify-center py-12 lg:py-24 mx-0 lg:mx-24">
+              <img
+                src={emptyAdmin}
+                alt="admin not found"
+                className="w-30 h-30 mb-6"
+              />
+              <h3 className="text-xl lg:text-2xl font-bold text-base-content font-poppins text-center">
+                {searchQuery ? "Admin Tidak Ditemukan" : "Tidak Ada Admin"}
+              </h3>
+              <p className="text-base-content/70 text-sm lg:text-base font-semibold font-mona text-center mb-4">
+                {searchQuery
+                  ? `Tidak ada Admin dengan nama atau email yang mengandung "${searchQuery}".`
+                  : "Tidak ada Admin yang sesuai dengan filter yang Anda pilih."}
+              </p>
+              <div className="flex flex-col sm:flex-row items-center gap-2">
+                {searchQuery && (
+                  <button
+                    onClick={() => {
+                      setSearchQuery("");
+                      setCurrentPage(1);
+                    }}
+                    className="flex items-center justify-center gap-2 shrink-0 rounded-lg py-3 px-6 bg-base-content hover:bg-neutral text-neutral-content font-semibold font-mona cursor-pointer"
+                  >
+                    Hapus Pencarian
+                  </button>
+                )}
+                {getActiveFilterCount() > 0 && (
+                  <button
+                    onClick={resetFilters}
+                    className="flex items-center justify-center gap-2 shrink-0 rounded-lg py-3 px-6 bg-base-content hover:bg-neutral text-neutral-content font-semibold font-mona cursor-pointer"
+                  >
+                    Reset Filter
+                  </button>
+                )}
+              </div>
+            </div>
+          </div>
         ) : (
           <>
             {/* Admin Table - Desktop */}
@@ -373,149 +652,155 @@ const ManajemenAdmin = () => {
                   ({totalAdmin}) Tersedia
                 </h6>
               </div>
-              <table className="table">
-                <thead>
-                  <tr>
-                    <th className="text-center font-mona text-base-content">
-                      Identitas
-                    </th>
-                    <th className="text-center font-mona text-base-content">
-                      Tanggung Jawab
-                    </th>
-                    <th className="text-center font-mona text-base-content">
-                      Bergabung Pada
-                    </th>
-                    <th className="text-center font-mona text-base-content">
-                      Status Keaktifan
-                    </th>
-                    <th className="text-center font-mona text-base-content">
-                      Opsi
-                    </th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {adminList.map((admin) => (
-                    <tr
-                      key={admin.id}
-                      className="hover:bg-neutral/5 transition cursor-pointer rounded-lg"
-                    >
-                      <td className="rounded-l-lg">
-                        <div className="flex items-center gap-3">
-                          {admin.fotoProfil ? (
-                            <div className="avatar">
-                              <div className="mask mask-squircle h-12 w-12 rounded-full">
-                                <img
-                                  src={admin.fotoProfil}
-                                  alt={admin.namaLengkap || admin.email}
-                                  className="w-12 h-12 rounded-full object-cover"
-                                />
+
+              <div className="overflow-x-auto" id="admin-table">
+                <table className="table">
+                  <thead>
+                    <tr>
+                      <th className="text-center font-mona text-base-content">
+                        Identitas
+                      </th>
+                      <th className="text-center font-mona text-base-content">
+                        Tanggung Jawab
+                      </th>
+                      <th className="text-center font-mona text-base-content">
+                        Bergabung Pada
+                      </th>
+                      <th className="text-center font-mona text-base-content">
+                        Status Keaktifan
+                      </th>
+                      <th className="text-center font-mona text-base-content">
+                        Opsi
+                      </th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {currentAdminList.map((admin) => (
+                      <tr
+                        key={admin.id}
+                        className="hover:bg-neutral/5 transition rounded-lg"
+                      >
+                        <td className="rounded-l-lg">
+                          <div className="flex items-center gap-3">
+                            {admin.fotoProfil ? (
+                              <div className="avatar">
+                                <div className="mask mask-squircle h-12 w-12 rounded-full">
+                                  <img
+                                    src={admin.fotoProfil}
+                                    alt={admin.namaLengkap || admin.email}
+                                    className="w-12 h-12 rounded-full object-cover"
+                                  />
+                                </div>
                               </div>
-                            </div>
-                          ) : (
-                            <div className="avatar">
-                              <div className="mask mask-squircle h-12 w-12 rounded-full">
-                                <img
-                                  src={emptyProfile}
-                                  alt="Default Image"
-                                  className="w-12 h-12 rounded-full object-cover"
-                                />
+                            ) : (
+                              <div className="avatar">
+                                <div className="mask mask-squircle h-12 w-12 rounded-full">
+                                  <img
+                                    src={emptyProfile}
+                                    alt="Default Image"
+                                    className="w-12 h-12 rounded-full object-cover"
+                                  />
+                                </div>
                               </div>
-                            </div>
-                          )}
-                          <div className="flex flex-col gap-1">
-                            <span className="font-bold text-base text-base-content">
-                              {admin.namaLengkap}
-                            </span>
-                            <span className="font-medium text-sm text-base-content/60">
-                              {admin.email}
-                            </span>
-                          </div>
-                        </div>
-                      </td>
-                      <td>
-                        <div className="flex items-center justify-center">
-                          {admin.propertiDikelola ? (
-                            <div className="flex flex-col items-center justify-center gap-1">
+                            )}
+                            <div className="flex flex-col gap-1">
                               <span className="font-bold text-base text-base-content">
-                                {admin.propertiDikelola.nama}
+                                {admin.namaLengkap}
                               </span>
-                              <span className="font-semibold text-sm text-base-content/60">
-                                {admin.nomorTelepon}
+                              <span className="font-medium text-sm text-base-content/60">
+                                {admin.email}
                               </span>
                             </div>
-                          ) : (
-                            <span className="text-center font-semibold text-base-content/60 truncate">
-                              Belum ada tanggung jawab
-                            </span>
-                          )}
-                        </div>
-                      </td>
-                      <td>
-                        <div className="flex items-center justify-center font-semibold text-base-content/60">
-                          {formatTanggal(admin.dibuatPada) || "Tidak Diketahui"}
-                        </div>
-                      </td>
-                      <td>
-                        <div className="flex items-center justify-center">
-                          <span>{getStatusBadge(admin.statusAkun)}</span>
-                        </div>
-                      </td>
-                      <td className="rounded-r-lg">
-                        <div className="flex items-center justify-center shrink-0">
-                          <button
-                            type="button"
-                            className="bg-transparent p-2 flex items-center justify-center rounded-full cursor-pointer hover:bg-neutral/10 transition-color"
-                          >
-                            <Eye className="w-5 h-5" />
-                          </button>
-                          {admin.statusAkun !== "DIBLOKIR" && (
+                          </div>
+                        </td>
+                        <td>
+                          <div className="flex items-center justify-center">
+                            {admin.propertiDikelola ? (
+                              <div className="flex flex-col items-center justify-center gap-1">
+                                <span className="font-bold text-base text-base-content">
+                                  {admin.propertiDikelola.nama}
+                                </span>
+                                <span className="font-semibold text-sm text-base-content/60">
+                                  {admin.nomorTelepon}
+                                </span>
+                              </div>
+                            ) : (
+                              <span className="text-center font-semibold text-base-content/60 truncate">
+                                Belum ada tanggung jawab
+                              </span>
+                            )}
+                          </div>
+                        </td>
+                        <td>
+                          <div className="flex items-center justify-center font-semibold text-base-content/60">
+                            {formatTanggal(admin.dibuatPada) ||
+                              "Tidak Diketahui"}
+                          </div>
+                        </td>
+                        <td>
+                          <div className="flex items-center justify-center">
+                            <span>{getStatusBadge(admin.statusAkun)}</span>
+                          </div>
+                        </td>
+                        <td className="rounded-r-lg">
+                          <div className="flex items-center justify-center shrink-0">
+                            <button
+                              type="button"
+                              onClick={() => handleOpenAdminDetail(admin)}
+                              className="bg-transparent p-2 flex items-center justify-center rounded-full cursor-pointer hover:bg-neutral/10 transition-color"
+                            >
+                              <Eye className="w-5 h-5" />
+                            </button>
+                            {admin.statusAkun !== "DIBLOKIR" && (
+                              <button
+                                type="button"
+                                onClick={() => {
+                                  if (!admin.propertiDikelola) {
+                                    handleOpenUbahStatus(admin);
+                                  }
+                                }}
+                                disabled={!!admin.propertiDikelola}
+                                className={`bg-transparent p-2 flex items-center justify-center rounded-full transition-color ${admin.propertiDikelola ? "cursor-not-allowed opacity-40" : "cursor-pointer hover:bg-neutral/10"}`}
+                              >
+                                <Activity className="w-5 h-5" />
+                              </button>
+                            )}
                             <button
                               type="button"
                               onClick={() => {
                                 if (!admin.propertiDikelola) {
-                                  handleOpenUbahStatus(admin);
+                                  setSelectedAdmin(admin);
+                                  setShowDeleteModal(true);
                                 }
                               }}
                               disabled={!!admin.propertiDikelola}
                               className={`bg-transparent p-2 flex items-center justify-center rounded-full transition-color ${admin.propertiDikelola ? "cursor-not-allowed opacity-40" : "cursor-pointer hover:bg-neutral/10"}`}
                             >
-                              <Activity className="w-5 h-5" />
+                              <Trash2 className="w-5 h-5" />
                             </button>
-                          )}
-                          <button
-                            type="button"
-                            onClick={() => {
-                              if (!admin.propertiDikelola) {
-                                setSelectedAdmin(admin);
-                                setShowDeleteModal(true);
-                              }
-                            }}
-                            disabled={!!admin.propertiDikelola}
-                            className={`bg-transparent p-2 flex items-center justify-center rounded-full transition-color ${admin.propertiDikelola ? "cursor-not-allowed opacity-40" : "cursor-pointer hover:bg-neutral/10"}`}
-                          >
-                            <Trash2 className="w-5 h-5" />
-                          </button>
-                        </div>
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
+                          </div>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+              {renderPagination()}
             </div>
 
             {/* Admin List - Mobile */}
             <div className="flex lg:hidden flex-col bg-base-100 rounded-lg border border-base-content/10 p-4 mb-20">
               <div className="flex items-center justify-between mb-6">
                 <h3 className="text-base font-poppins font-extrabold text-base-content">
-                  Semua Admin
+                  {searchQuery ? "Hasil Pencarian" : "Semua Admin"}
                 </h3>
                 <span className="text-xs font-mona font-semibold text-base-content/60">
-                  ({totalAdmin}) Tersedia
+                  ({totalAdmin}) {searchQuery ? "Ditemukan" : "Tersedia"}
                 </span>
               </div>
 
-              <div className="space-y-4">
-                {adminList.map((admin) => (
+              <div className="space-y-4" id="admin-list">
+                {currentAdminList.map((admin) => (
                   <div
                     key={admin.id}
                     className="w-full flex items-center justify-between gap-3"
@@ -567,6 +852,7 @@ const ManajemenAdmin = () => {
                   </div>
                 ))}
               </div>
+              {renderPagination()}
             </div>
 
             {/* Admin Menu - Mobile */}
@@ -594,11 +880,9 @@ const ManajemenAdmin = () => {
                     <div className="p-2">
                       <button
                         type="button"
-                        onClick={() => {
-                          console.log("Lihat Detail:", selectedAdmin);
-
-                          handleCloseAdminMenu();
-                        }}
+                        onClick={() =>
+                          handleOpenAdminDetail(selectedAdminForMenu)
+                        }
                         className="w-full flex items-center gap-3 px-3 py-2 rounded-md text-sm font-medium text-base-content hover:bg-base-content/10 transition-colors cursor-pointer"
                       >
                         <Eye className="w-4 h-4 shrink-0 text-base-content/70" />
@@ -896,7 +1180,7 @@ const ManajemenAdmin = () => {
                           <img
                             src={addNewAdminIcon}
                             alt="add admin"
-                            className="w-7 h-7 object-cover"
+                            className="w-7 h-7 text-base-content"
                           />
                           <h4 className="font-poppins font-bold text-lg">
                             Tambah Admin
@@ -1046,13 +1330,7 @@ const ManajemenAdmin = () => {
                       </div>
 
                       {/* Footer */}
-                      <div
-                        className="shrink-0 grid grid-cols-2 gap-3 pt-4 pb-2"
-                        style={{
-                          paddingBottom:
-                            "calc(env(safe-area-inset-bottom) + 0.5rem)",
-                        }}
-                      >
+                      <div className="shrink-0 grid grid-cols-2 gap-3 py-4">
                         <button
                           type="button"
                           className="btn border border-base-content rounded-lg"
@@ -1134,6 +1412,20 @@ const ManajemenAdmin = () => {
           </dialog>
         )}
       </div>
+
+      <AdminFilter
+        isOpen={showFilterModal}
+        onClose={() => setShowFilterModal(false)}
+        onApply={applyFilters}
+        onReset={resetFilters}
+        initialFilters={filters}
+      />
+
+      <AdminDetail
+        isOpen={showAdminDetail}
+        adminId={selectedAdminDetail}
+        onClose={handleCloseAdminDetail}
+      />
 
       <UbahStatusAdminModal
         isOpen={showUbahStatusModal}

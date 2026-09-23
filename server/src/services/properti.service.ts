@@ -26,11 +26,6 @@ export type DataUbahProperti = Partial<
 // Owner membuat properti baru dengan Admin sebagai pengelola lebih lanjut (Owner Only)
 export const buatProperti = async (ownerId: string, data: DataBuatProperti) => {
   try {
-    console.log(
-      "🏨 Creating property with data:",
-      JSON.stringify(data, null, 2),
-    );
-
     const owner = await prisma.pengguna.findUnique({
       where: { id: ownerId },
       select: { peran: true },
@@ -43,19 +38,19 @@ export const buatProperti = async (ownerId: string, data: DataBuatProperti) => {
       };
     }
 
-    if (!data.adminId) {
+    if (!data.adminId || data.adminId.trim() === "") {
       return {
         sukses: false,
         pesan: "Admin wajib dipilih untuk mengelola properti.",
       };
     }
 
-    console.log("🔍 Checking admin with ID:", data.adminId);
-
-    const admin = await prisma.pengguna.findUnique({
-      where: { id: data.adminId },
+    const admin = await prisma.pengguna.findFirst({
+      where: { id: data.adminId, peran: "ADMIN", dibuatOlehId: ownerId },
       include: {
-        propertiDikelola: true,
+        propertiDikelola: {
+          select: { id: true, nama: true },
+        },
       },
     });
 
@@ -73,14 +68,39 @@ export const buatProperti = async (ownerId: string, data: DataBuatProperti) => {
       };
     }
 
+    if (admin.statusAkun === "NONAKTIF") {
+      return {
+        sukses: false,
+        pesan: `${admin.namaLengkap || admin.email} sedang cuti.`,
+      };
+    }
+
+    if (admin.statusAkun === "DIBLOKIR") {
+      return {
+        sukses: false,
+        pesan: `${admin.namaLengkap || admin.email} telah dipecat.`,
+      };
+    }
+
     if (admin.propertiDikelola) {
       return {
         sukses: false,
-        pesan: "Admin ini sudah mengelola properti lain.",
+        pesan: `Admin ini sudah bertanggung jawab atas properti ${admin.propertiDikelola}.`,
       };
     }
 
     const propertiBaru = await prisma.$transaction(async (tx) => {
+      const adminCheck = await tx.pengguna.findFirst({
+        where: {
+          id: data.adminId,
+          propertiDikelola: null,
+        },
+      });
+
+      if (!adminCheck) {
+        throw new Error("RACE_CONDITION");
+      }
+
       const properti = await tx.properti.create({
         data: {
           nama: data.nama,
@@ -123,23 +143,40 @@ export const buatProperti = async (ownerId: string, data: DataBuatProperti) => {
           select: { id: true, email: true, namaLengkap: true },
         },
         admin: {
-          select: { id: true, email: true, namaLengkap: true },
+          select: {
+            id: true,
+            email: true,
+            namaLengkap: true,
+            nomorTelepon: true,
+            fotoProfil: true,
+          },
         },
         gambar: {
           orderBy: { urutan: "asc" },
         },
-        tipeKamar: true,
       },
     });
 
     return {
       sukses: true,
-      pesan: `Properti ${data.nama} berhasil dibuat.`,
+      pesan: `Properti ${data.nama} berhasil dibuat dan kini dikelola oleh ${admin.namaLengkap || admin.email}.`,
       data: propertiWithRelations,
     };
   } catch (error: any) {
     console.error("Buat properti error:", error);
-    console.error("❌ Stack trace:", error.stack);
+
+    // if (error.message === "RACE_CONDITION") {
+    const isAdminConflict =
+      error.message === "RACE_CONDITION" ||
+      (error.code === "P2002" &&
+        String(error.meta?.target ?? "").includes("adminId"));
+    if (isAdminConflict) {
+      return {
+        sukses: false,
+        pesan:
+          "Admin yang dipilih baru saja ditugaskan ke properti lain. Silakan pilih Admin lain.",
+      };
+    }
 
     return {
       sukses: false,
@@ -167,6 +204,7 @@ export const getAdminTersedia = async (ownerId: string) => {
       where: {
         peran: "ADMIN",
         dibuatOlehId: ownerId,
+        statusAkun: "AKTIF",
         propertiDikelola: null,
       },
       select: {
@@ -174,6 +212,8 @@ export const getAdminTersedia = async (ownerId: string) => {
         email: true,
         namaLengkap: true,
         nomorTelepon: true,
+        fotoProfil: true,
+        statusAkun: true,
         dibuatPada: true,
       },
       orderBy: { dibuatPada: "desc" },

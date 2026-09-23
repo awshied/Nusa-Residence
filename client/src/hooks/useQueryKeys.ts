@@ -17,6 +17,8 @@ export const queryKeys = {
       [...queryKeys.properti.lists(), { ...filters }] as const,
     details: () => [...queryKeys.properti.all, "detail"] as const,
     detail: (id: string) => [...queryKeys.properti.details(), id] as const,
+    adminAvailable: () =>
+      [...queryKeys.properti.all, "admin-available"] as const,
   },
   admin: {
     all: ["admin"] as const,

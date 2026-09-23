@@ -14,6 +14,7 @@ import {
 import DropzoneGambar from "../shared/DropzoneGambar";
 
 import addNewPropertyIcon from "@/assets/icons/add-new-property.png";
+import emptyProfile from "@/assets/empty-profile.png";
 
 const AMENITIES_LIST: { value: Amenities; label: string }[] = [
   { value: "AIR_CONDITIONER", label: "Air Conditioner" },
@@ -64,57 +65,89 @@ const KATEGORI_PROPERTI: { value: KategoriProperti; label: string }[] = [
 ];
 
 const skemaTambahProperti = z.object({
-  nama: z.string().min(3, "Nama properti minimal 3 karakter.").max(100),
+  nama: z
+    .string()
+    .min(3, "Nama properti minimal 3 karakter.")
+    .max(100, "Nama properti maksimal 100 karakter."),
   kategori: z.enum(["HOTEL", "VILLA", "APARTEMEN", "KOSAN", "KONTRAKAN"]),
 
-  namaJalan: z.string().min(3, "Nama jalan minimal 3 karakter"),
-  kelurahan: z.string().min(3, "Kelurahan minimal 3 karakter"),
-  kecamatan: z.string().min(3, "Kecamatan minimal 3 karakter"),
-  kabupatenKota: z.string().min(3, "Kabupaten/Kota minimal 3 karakter"),
-  provinsi: z.string().min(3, "Provinsi minimal 3 karakter"),
-  kodePos: z.string().optional(),
-  latitude: z.number().min(-90).max(90),
-  longitude: z.number().min(-180).max(180),
+  namaJalan: z
+    .string()
+    .min(3, "Nama jalan minimal 3 karakter.")
+    .max(100, "Nama jalan maksimal 100 karakter."),
+  kelurahan: z
+    .string()
+    .min(3, "Kelurahan minimal 3 karakter.")
+    .max(100, "Kelurahan maksimal 100 karakter."),
+  kecamatan: z
+    .string()
+    .min(3, "Kecamatan minimal 3 karakter.")
+    .max(100, "Kecamatan maksimal 100 karakter."),
+  kabupatenKota: z
+    .string()
+    .min(3, "Kabupaten/Kota minimal 3 karakter.")
+    .max(100, "Kabupaten/Kota maksimal 100 karakter."),
+  provinsi: z
+    .string()
+    .min(3, "Provinsi minimal 3 karakter.")
+    .max(100, "Provinsi maksimal 100 karakter."),
+  kodePos: z
+    .string()
+    .regex(/^[0-9]{5}$/, "Kode pos harus 5 digit angka.")
+    .optional()
+    .or(z.literal("")),
 
+  latitude: z
+    .number()
+    .min(-90, "Latitude minimal harus -90.")
+    .max(90, "Latitude maksimal harus 90."),
+  longitude: z
+    .number()
+    .min(-180, "Longitude minimal harus -180.")
+    .max(180, "Longitude maksimal harus 180."),
   luasBangunan: z
     .number()
     .positive("Luas bangunan tidak boleh negatif.")
     .optional(),
   deskripsi: z.string().optional(),
+  // amenities: z
+  //   .array(
+  //     z.enum([
+  //       "AIR_CONDITIONER",
+  //       "TELEVISI",
+  //       "WIFI",
+  //       "KOLAM_RENANG",
+  //       "PARKIR",
+  //       "BATHUB",
+  //       "RESTORAN",
+  //       "GYM",
+  //       "SPA",
+  //       "MUSHOLA",
+  //       "MINI_BAR",
+  //       "KITCHENETTE",
+  //       "MESIN_CUCI",
+  //       "KIPAS_ANGIN",
+  //       "AIR_PANAS",
+  //       "BREAKFAST",
+  //       "ROOM_SERVICE",
+  //       "RESEPSIONIS_24JAM",
+  //       "KEAMANAN_24JAM",
+  //       "AREA_BERMAIN_ANAK",
+  //       "TAMAN",
+  //       "BALKON",
+  //       "DAPUR_UMUM",
+  //       "RUANG_TAMU",
+  //       "AIR_ISI_ULANG",
+  //       "LISTRIK",
+  //       "GAS_ALAM",
+  //       "KAMAR_MANDI_DALAM",
+  //       "KAMAR_MANDI_LUAR",
+  //     ]),
+  // )
+  // .default([])
+  // .transform((val) => filterValidAmenities(val)),
   amenities: z
-    .array(
-      z.enum([
-        "AIR_CONDITIONER",
-        "TELEVISI",
-        "WIFI",
-        "KOLAM_RENANG",
-        "PARKIR",
-        "BATHUB",
-        "RESTORAN",
-        "GYM",
-        "SPA",
-        "MUSHOLA",
-        "MINI_BAR",
-        "KITCHENETTE",
-        "MESIN_CUCI",
-        "KIPAS_ANGIN",
-        "AIR_PANAS",
-        "BREAKFAST",
-        "ROOM_SERVICE",
-        "RESEPSIONIS_24JAM",
-        "KEAMANAN_24JAM",
-        "AREA_BERMAIN_ANAK",
-        "TAMAN",
-        "BALKON",
-        "DAPUR_UMUM",
-        "RUANG_TAMU",
-        "AIR_ISI_ULANG",
-        "LISTRIK",
-        "GAS_ALAM",
-        "KAMAR_MANDI_DALAM",
-        "KAMAR_MANDI_LUAR",
-      ]),
-    )
+    .array(z.string())
     .default([])
     .transform((val) => filterValidAmenities(val)),
   adminId: z.string().uuid("Tentukan Admin yang tersedia."),
@@ -136,6 +169,7 @@ const PropertiModal = ({ isOpen, onClose, properti }: Props) => {
   const editProperti = useEditProperty();
 
   const [gambarFiles, setGambarFiles] = useState<File[]>([]);
+  const [imageError, setImageError] = useState<Record<string, boolean>>({});
 
   const {
     register,
@@ -154,16 +188,16 @@ const PropertiModal = ({ isOpen, onClose, properti }: Props) => {
     },
   });
 
+  const selectedAmenities = watch("amenities") || [];
+
   useEffect(() => {
     if (!isOpen) {
       reset();
       setGambarFiles([]);
+      setImageError({});
+      return;
     }
-  }, [isOpen, reset]);
 
-  const selectedAmenities = watch("amenities") || [];
-
-  useEffect(() => {
     if (isEditMode && properti) {
       const validAmenities = filterValidAmenities(properti.amenities || []);
       reset({
@@ -192,19 +226,13 @@ const PropertiModal = ({ isOpen, onClose, properti }: Props) => {
       });
       setGambarFiles([]);
     }
-  }, [properti, isEditMode, reset]);
+  }, [isOpen, properti, isEditMode, reset]);
 
   const toggleAmenity = (amenityValue: string) => {
-    const current = selectedAmenities;
-
-    if (!isValidAmenity(amenityValue)) {
-      console.warn(
-        `Fasilitas "${amenityValue}" tidak valid dan akan diabaikan.`,
-      );
-      return;
-    }
+    if (!isValidAmenity(amenityValue)) return;
 
     const amenity = amenityValue as Amenities;
+    const current = selectedAmenities;
 
     if (current.includes(amenity)) {
       setValue(
@@ -237,33 +265,42 @@ const PropertiModal = ({ isOpen, onClose, properti }: Props) => {
       gambar: gambarFiles,
     };
 
-    if (isEditMode && properti) {
-      await editProperti.mutateAsync({
-        id: properti.id,
-        data: {
-          nama: data.nama,
-          kategori: data.kategori,
-          namaJalan: data.namaJalan,
-          kelurahan: data.kelurahan,
-          kecamatan: data.kecamatan,
-          kabupatenKota: data.kabupatenKota,
-          provinsi: data.provinsi,
-          kodePos: data.kodePos,
-          latitude: data.latitude,
-          longitude: data.longitude,
-          luasBangunan: data.luasBangunan,
-          deskripsi: data.deskripsi,
-          amenities: validAmenities,
-        },
-      });
-      onClose();
-    } else {
-      await buatProperti.mutateAsync(payload);
-      onClose();
+    try {
+      if (isEditMode && properti) {
+        await editProperti.mutateAsync({
+          id: properti.id,
+          data: {
+            nama: data.nama,
+            kategori: data.kategori,
+            namaJalan: data.namaJalan,
+            kelurahan: data.kelurahan,
+            kecamatan: data.kecamatan,
+            kabupatenKota: data.kabupatenKota,
+            provinsi: data.provinsi,
+            kodePos: data.kodePos || undefined,
+            latitude: data.latitude,
+            longitude: data.longitude,
+            luasBangunan: data.luasBangunan || undefined,
+            deskripsi: data.deskripsi || undefined,
+            amenities: validAmenities,
+          },
+        });
+        onClose();
+      } else {
+        await buatProperti.mutateAsync(payload);
+        onClose();
+      }
+    } catch (error) {
+      console.error("Submit properti error:", error);
     }
   };
 
   const isSubmitting = buatProperti.isPending || editProperti.isPending;
+
+  const isFormDisabled =
+    isSubmitting ||
+    (!isEditMode && adminList.length === 0) ||
+    (!isEditMode && loadingAdmin);
 
   if (!isOpen) return null;
 
@@ -490,10 +527,19 @@ const PropertiModal = ({ isOpen, onClose, properti }: Props) => {
                           <input
                             type="text"
                             placeholder="Kode Pos"
-                            className="input input-bordered w-full"
+                            className={`input input-bordered w-full ${
+                              errors.kodePos ? "input-error" : ""
+                            }`}
                             {...register("kodePos")}
                             disabled={isSubmitting}
                           />
+                          {errors.kodePos && (
+                            <label className="label">
+                              <span className="label-text-alt text-error">
+                                {errors.kodePos.message}
+                              </span>
+                            </label>
+                          )}
                         </div>
                       </div>
                     </div>
@@ -674,7 +720,13 @@ const PropertiModal = ({ isOpen, onClose, properti }: Props) => {
                             adminList.length === 0
                           }
                         >
-                          <option value="">-- Pilih Admin --</option>
+                          <option value="">
+                            {loadingAdmin
+                              ? "-- Memuat Admin --"
+                              : adminList.length === 0
+                                ? "-- Tidak Ada Admin Tersedia --"
+                                : "-- Pilih Admin --"}
+                          </option>
                           {adminList.map((admin) => (
                             <option key={admin.id} value={admin.id}>
                               {admin.namaLengkap || admin.email}{" "}
@@ -730,9 +782,17 @@ const PropertiModal = ({ isOpen, onClose, properti }: Props) => {
                                 className="relative aspect-square"
                               >
                                 <img
-                                  src={img.url}
+                                  src={
+                                    imageError[img.id] ? emptyProfile : img.url
+                                  }
                                   alt="Gambar properti"
                                   className="w-full h-full object-cover rounded-lg border-2 border-base-200"
+                                  onError={() =>
+                                    setImageError((prev) => ({
+                                      ...prev,
+                                      [img.id]: true,
+                                    }))
+                                  }
                                 />
                                 {img.isUtama && (
                                   <span className="absolute top-1 left-1 bg-primary text-primary-content text-xs px-2 py-0.5 rounded">
@@ -776,9 +836,7 @@ const PropertiModal = ({ isOpen, onClose, properti }: Props) => {
                 <button
                   type="submit"
                   className="btn btn-primary"
-                  disabled={
-                    isSubmitting || (!isEditMode && adminList.length === 0)
-                  }
+                  disabled={isFormDisabled}
                 >
                   {isSubmitting ? (
                     <>

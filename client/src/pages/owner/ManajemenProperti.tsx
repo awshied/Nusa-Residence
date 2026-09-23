@@ -1,60 +1,62 @@
 import { useState } from "react";
-import { Link } from "react-router-dom";
-import { Plus } from "lucide-react";
+// import { Link } from "react-router-dom";
+// import { Plus } from "lucide-react";
 
 import type { TipeProperti } from "@/types";
-import { useDeleteProperty, useOwnerProperty } from "@/hooks/useProperti";
+import { useOwnerProperty } from "@/hooks/useProperti";
 
 import Loading from "@/components/layout/Loading";
 import PropertiModal from "@/components/layout/PropertiModal";
+import StatisticCard from "@/components/layout/StatisticCard";
 import emptyProperty from "@/assets/empty-property.png";
+import propertyManagementIcon from "@/assets/icons/property-management-outline.png";
 
 const ManajemenProperti = () => {
   const [showModal, setShowModal] = useState(false);
   const [selectedProperti, setSelectedProperti] = useState<TipeProperti | null>(
     null,
   );
-  const [showDeleteModal, setShowDeleteModal] = useState(false);
-  const [propertiToDelete, setPropertiToDelete] = useState<TipeProperti | null>(
-    null,
-  );
+  // const [showDeleteModal, setShowDeleteModal] = useState(false);
+  // const [propertiToDelete, setPropertiToDelete] = useState<TipeProperti | null>(
+  //   null,
+  // );
 
-  const { data: propertiList = [], isLoading, refetch } = useOwnerProperty();
-  const hapusProperti = useDeleteProperty();
+  const { data: propertiList = [], isLoading } = useOwnerProperty();
+  // const hapusProperti = useDeleteProperty();
 
-  const handleEdit = (properti: TipeProperti) => {
-    setSelectedProperti(properti);
-    setShowModal(true);
-  };
+  // const handleEdit = (properti: TipeProperti) => {
+  //   setSelectedProperti(properti);
+  //   setShowModal(true);
+  // };
 
-  const handleDelete = async () => {
-    if (!propertiToDelete) return;
-    await hapusProperti.mutateAsync(propertiToDelete.id);
-    setShowDeleteModal(false);
-    setPropertiToDelete(null);
-  };
+  // const handleDelete = async () => {
+  //   if (!propertiToDelete) return;
+  //   await hapusProperti.mutateAsync(propertiToDelete.id);
+  //   setShowDeleteModal(false);
+  //   setPropertiToDelete(null);
+  // };
 
-  const getKategoriBadge = (kategori: string) => {
-    const colors: Record<string, string> = {
-      HOTEL: "badge-primary",
-      VILLA: "badge-secondary",
-      APARTEMEN: "badge-accent",
-      KOSAN: "badge-info",
-      KONTRAKAN: "badge-success",
-    };
-    return colors[kategori] || "badge-ghost";
-  };
+  // const getKategoriBadge = (kategori: string) => {
+  //   const colors: Record<string, string> = {
+  //     HOTEL: "badge-primary",
+  //     VILLA: "badge-secondary",
+  //     APARTEMEN: "badge-accent",
+  //     KOSAN: "badge-info",
+  //     KONTRAKAN: "badge-success",
+  //   };
+  //   return colors[kategori] || "badge-ghost";
+  // };
 
-  const getKategoriLabel = (kategori: string) => {
-    const labels: Record<string, string> = {
-      HOTEL: "Hotel",
-      VILLA: "Villa",
-      APARTEMEN: "Apartemen",
-      KOSAN: "Kosan",
-      KONTRAKAN: "Kontrakan",
-    };
-    return labels[kategori] || kategori;
-  };
+  // const getKategoriLabel = (kategori: string) => {
+  //   const labels: Record<string, string> = {
+  //     HOTEL: "Hotel",
+  //     VILLA: "Villa",
+  //     APARTEMEN: "Apartemen",
+  //     KOSAN: "Kosan",
+  //     KONTRAKAN: "Kontrakan",
+  //   };
+  //   return labels[kategori] || kategori;
+  // };
 
   if (isLoading) {
     return <Loading isLoading={isLoading} />;
@@ -62,20 +64,85 @@ const ManajemenProperti = () => {
 
   return (
     <>
-      <div className="space-y-6 mt-6">
-        <div className="flex items-center justify-end">
-          <button
-            onClick={() => {
-              setSelectedProperti(null);
-              setShowModal(true);
-            }}
-            className="flex items-center justify-center gap-2 shrink-0 flex-nowrap rounded-lg py-2.5 px-5 bg-base-content hover:bg-neutral text-neutral-content font-semibold font-mona shadow-md cursor-pointer"
-          >
-            <Plus size={18} /> Tambah
-          </button>
+      <div className="space-y-6 mt-6 px-4 lg:px-0">
+        {/* Statistic Card - All Device */}
+        <div className="mx-auto grid grid-cols-3 gap-2 lg:gap-4">
+          <StatisticCard
+            title="Total Properti"
+            value="3"
+            icon={propertyManagementIcon}
+          />
+          <StatisticCard
+            title="Total Booking"
+            value="3"
+            icon={propertyManagementIcon}
+          />
+          <StatisticCard
+            title="Tingkat Hunian"
+            value="3"
+            icon={propertyManagementIcon}
+          />
         </div>
 
+        {/* Mobile - Small Size */}
+        <div className="flex lg:hidden breadcrumbs items-center ml-1">
+          <ul>
+            <li>
+              <img
+                src={propertyManagementIcon}
+                alt="page icon"
+                className="w-4 h-4"
+              />
+            </li>
+            <li>
+              <p className="text-sm font-medium text-base-content font-mona">
+                Kelola
+              </p>
+            </li>
+            <li>
+              <p className="text-sm font-medium text-base-content font-mona">
+                Properti
+              </p>
+            </li>
+          </ul>
+        </div>
+
+        {/* Empty Property List - All Device */}
         {propertiList.length === 0 ? (
+          <div className="card bg-base-100 rounded-lg shadow-none lg:shadow-xl mb-12 lg:mb-0">
+            <div className="card-body items-center justify-center py-12 lg:py-24 mx-0 lg:mx-24">
+              <img
+                src={emptyProperty}
+                alt="admin not found"
+                className="w-30 h-30 mb-6"
+              />
+              <h3 className="text-xl lg:text-2xl font-bold text-base-content font-poppins text-center">
+                Properti Kosong
+              </h3>
+              <p className="text-base-content/70 text-sm lg:text-base font-semibold font-mona text-center mb-4">
+                Anda belum menambahkan satu pun properti ke dalam sistem sebagai
+                tempat penginapan bagi para tamu
+              </p>
+              <button
+                onClick={() => {
+                  setSelectedProperti(null);
+                  setShowModal(true);
+                }}
+                className="flex items-center justify-center gap-2 shrink-0 rounded-lg py-3 px-6 bg-base-content hover:bg-neutral text-neutral-content font-semibold font-mona cursor-pointer"
+              >
+                Tambah Properti Baru
+              </button>
+            </div>
+          </div>
+        ) : (
+          <>
+            {/* Desktop - Large Size */}
+
+            {/* Mobile - Small Size */}
+          </>
+        )}
+
+        {/* {propertiList.length === 0 ? (
           <div className="card bg-base-100 rounded-lg shadow-xl">
             <div className="card-body items-center justify-center py-24 mx-24">
               <img
@@ -205,10 +272,10 @@ const ManajemenProperti = () => {
               </div>
             ))}
           </div>
-        )}
+        )} */}
 
         {/* Modal Konfirmasi Hapus */}
-        {showDeleteModal && propertiToDelete && (
+        {/* {showDeleteModal && propertiToDelete && (
           <dialog
             className="modal modal-open"
             onClick={(e) => {
@@ -247,7 +314,7 @@ const ManajemenProperti = () => {
               </div>
             </div>
           </dialog>
-        )}
+        )} */}
       </div>
 
       <PropertiModal
@@ -255,7 +322,6 @@ const ManajemenProperti = () => {
         onClose={() => {
           setShowModal(false);
           setSelectedProperti(null);
-          refetch();
         }}
         properti={selectedProperti}
       />

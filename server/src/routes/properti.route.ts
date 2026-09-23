@@ -21,26 +21,10 @@ const router = Router();
 
 router.use(verifikasiAutentikasi);
 
-router.post(
-  "/",
-  VerifikasiRole("PEMILIK"),
-  handleMultipartForm("gambar", 5),
-  tambahPropertiBaru,
-);
-
 router.get("/owner", VerifikasiRole("PEMILIK"), getSemuaPropertiOwner);
 router.get("/admin", VerifikasiRole("ADMIN"), getPropertiAdmin);
-router.get("/:id", VerifikasiRole("PEMILIK"), getDataProperti);
-router.put("/:id", VerifikasiRole("PEMILIK"), editProperti);
-router.delete("/:id", VerifikasiRole("PEMILIK"), hilangkanProperti);
-
 router.get("/admin-tersedia", VerifikasiRole("PEMILIK"), getKetersediaanAdmin);
-router.post(
-  "/:id/gambar",
-  VerifikasiRole("PEMILIK"),
-  handleMultipartForm("gambar", 5),
-  uploadGambarProperti,
-);
+
 router.delete(
   "/gambar/:gambarId",
   VerifikasiRole("PEMILIK"),
@@ -50,6 +34,23 @@ router.patch(
   "/gambar/:gambarId/utama",
   VerifikasiRole("PEMILIK"),
   setGambarUtamaProperti,
+);
+router.post(
+  "/",
+  VerifikasiRole("PEMILIK"),
+  handleMultipartForm("gambar", 5),
+  tambahPropertiBaru,
+);
+
+router.get("/:id", VerifikasiRole("PEMILIK"), getDataProperti);
+router.put("/:id", VerifikasiRole("PEMILIK"), editProperti);
+router.delete("/:id", VerifikasiRole("PEMILIK"), hilangkanProperti);
+
+router.post(
+  "/:id/gambar",
+  VerifikasiRole("PEMILIK"),
+  handleMultipartForm("gambar", 5),
+  uploadGambarProperti,
 );
 
 export default router;

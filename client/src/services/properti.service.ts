@@ -1,5 +1,9 @@
 import api from "@/lib/api";
-import type { DataBuatProperti, TipeProperti } from "@/types";
+import type {
+  DataBuatProperti,
+  TipeAdminTersedia,
+  TipeProperti,
+} from "@/types";
 
 export const getPropertiOwner = async (): Promise<{
   sukses: boolean;
@@ -19,12 +23,7 @@ export const getDetailProperti = async (
 
 export const getAdminTersedia = async (): Promise<{
   sukses: boolean;
-  data?: {
-    id: string;
-    email: string;
-    namaLengkap?: string;
-    nomorTelepon?: string;
-  }[];
+  data?: TipeAdminTersedia[];
   pesan?: string;
 }> => {
   const response = await api.get("/properti/admin-tersedia");
@@ -60,15 +59,6 @@ export const tambahProperti = async (
     data.gambar.forEach((file: File) => {
       formData.append("gambar", file);
     });
-  }
-
-  console.log("📤 FormData yang dikirim:");
-  for (const [key, value] of formData.entries()) {
-    if (key === "gambar") {
-      console.log(`  ${key}: [File] ${(value as File).name}`);
-    } else {
-      console.log(`  ${key}: ${value}`);
-    }
   }
 
   const response = await api.post("/properti", formData, {

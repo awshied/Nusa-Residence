@@ -1,3 +1,4 @@
+import { Amenities } from "@prisma/client";
 import { Request, Response } from "express";
 import {
   skemaBuatProperti,
@@ -52,39 +53,49 @@ export const tambahPropertiBaru = async (req: Request, res: Response) => {
 
     const body = req.body;
 
-    const latitude = parseFloat(body.latitude) || 0;
-    const longitude = parseFloat(body.longitude) || 0;
+    const latitude = parseFloat(body.latitude);
+    const longitude = parseFloat(body.longitude);
     const luasBangunan = body.luasBangunan
       ? parseFloat(body.luasBangunan)
       : undefined;
 
-    let amenities = body.amenities || [];
-    if (typeof amenities === "string") {
-      try {
-        amenities = JSON.parse(amenities);
-      } catch (e) {
-        amenities = [];
-      }
-    }
-    if (!Array.isArray(amenities)) {
-      amenities = [];
+    if (isNaN(latitude) || isNaN(longitude)) {
+      return res.status(400).json({
+        sukses: false,
+        pesan: "Latitude dan longitude harus berupa angka yang valid.",
+      });
     }
 
+    let amenities: string[] = [];
+    if (typeof body.amenities === "string") {
+      try {
+        const parsed = JSON.parse(body.amenities);
+        amenities = Array.isArray(parsed) ? parsed : [];
+      } catch {
+        amenities = [];
+      }
+    } else if (Array.isArray(body.amenities)) {
+      amenities = body.amenities;
+    }
+
+    const validAmenities = Object.values(Amenities);
+    amenities = amenities.filter((a) => validAmenities.includes(a as any));
+
     const dataToValidate = {
-      nama: body.nama || "",
+      nama: body.nama?.trim() || "",
       kategori: body.kategori || "",
-      namaJalan: body.namaJalan || "",
-      kelurahan: body.kelurahan || "",
-      kecamatan: body.kecamatan || "",
-      kabupatenKota: body.kabupatenKota || "",
-      provinsi: body.provinsi || "",
-      kodePos: body.kodePos || undefined,
-      latitude: latitude,
-      longitude: longitude,
-      luasBangunan: luasBangunan,
-      deskripsi: body.deskripsi || undefined,
-      amenities: amenities,
-      adminId: body.adminId || "",
+      namaJalan: body.namaJalan?.trim() || "",
+      kelurahan: body.kelurahan?.trim() || "",
+      kecamatan: body.kecamatan?.trim() || "",
+      kabupatenKota: body.kabupatenKota?.trim() || "",
+      provinsi: body.provinsi?.trim() || "",
+      kodePos: body.kodePos?.trim() || undefined,
+      latitude,
+      longitude,
+      luasBangunan,
+      deskripsi: body.deskripsi?.trim() || undefined,
+      amenities,
+      adminId: body.adminId?.trim() || "",
     };
 
     const validasi = skemaBuatProperti.safeParse(dataToValidate);
@@ -111,7 +122,7 @@ export const tambahPropertiBaru = async (req: Request, res: Response) => {
         });
       }
 
-      const uploadPromises = files.map(async (file, index) => {
+      const uploadPromises = files.map(async (file) => {
         const base64 = file.buffer.toString("base64");
         const dataUri = `data:${file.mimetype};base64,${base64}`;
 
